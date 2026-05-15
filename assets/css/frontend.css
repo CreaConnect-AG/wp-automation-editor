@@ -1,0 +1,290 @@
+.wpa-editor-wrap {
+    box-sizing: border-box;
+}
+
+.wpa-card {
+    background: #ffffff;
+    border: 1px solid #dcdcde;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.wpa-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.wpa-card-header h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    line-height: 1.2;
+}
+
+.wpa-card-header p {
+    margin: 0;
+    color: #50575e;
+}
+
+.wpa-filter-form label,
+.wpa-edit-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.wpa-filter-grid,
+.wpa-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.wpa-form-row {
+    margin-bottom: 22px;
+}
+
+.wpa-filter-form select,
+.wpa-filter-form input[type="text"],
+.wpa-edit-form input[type="text"],
+.wpa-edit-form textarea,
+.wpa-edit-form select {
+    width: 100%;
+    border: 1px solid #8c8f94;
+    padding: 12px 14px;
+    min-height: 46px;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.wpa-edit-form textarea {
+    min-height: 130px;
+}
+
+.wpa-editor-box {
+    border: 1px solid #dcdcde;
+    overflow: hidden;
+    background: #fff;
+}
+
+.wpa-help-text {
+    margin: 8px 0 0;
+    color: #646970;
+    font-size: 14px;
+}
+
+.wpa-filter-actions,
+.wpa-form-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.wpa-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    text-decoration: none;
+    border: 1px solid #dcdcde;
+    background: #f6f7f7;
+    color: #1d2327;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wpa-button:hover {
+    background: #ededee;
+    color: #1d2327;
+}
+
+.wpa-button-primary {
+    background: #00939e;
+    color: #fff;
+    border-color: #00939e;
+}
+
+.wpa-button-primary:hover {
+    background: #00545a;
+    color: #fff;
+    border-color: #00545a;
+}
+
+.wpa-table-wrap {
+    overflow-x: auto;
+}
+
+.wpa-post-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.wpa-post-table th,
+.wpa-post-table td {
+    text-align: left;
+    padding: 14px 12px;
+    border-bottom: 1px solid #e5e5e5;
+    vertical-align: top;
+}
+
+.wpa-post-table th {
+    font-size: 14px;
+    color: #50575e;
+}
+
+.wpa-post-meta-line {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #646970;
+}
+
+.wpa-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.wpa-status-unbearbeitet {
+    background: #f0f0f1;
+    color: #1d2327;
+}
+
+.wpa-status-in_bearbeitung {
+    background: #fff3cd;
+    color: #7a5c00;
+}
+
+.wpa-status-fertig {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.wpa-pagination {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+}
+
+.wpa-pagination .page-numbers {
+    display: inline-flex;
+    min-width: 42px;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    border: 1px solid #dcdcde;
+    text-decoration: none;
+    color: #1d2327;
+    background: #fff;
+}
+
+.wpa-pagination .page-numbers.current {
+    background: #00939e;
+    color: #fff;
+    border-color: #00939e;
+}
+
+.wpa-notice {
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    font-weight: 600;
+}
+
+.wpa-notice-success {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.wpa-notice-error {
+    background: #f8d7da;
+    color: #842029;
+}
+
+.wpa-notice-info {
+    background: #e7f1ff;
+    color: #084298;
+}
+
+.wpa-back-link {
+    display: inline-block;
+    margin-bottom: 10px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.wpa-empty-state {
+    padding: 16px 0;
+}
+
+.wpa-lock-message {
+    margin-bottom: 18px;
+}
+
+.wpa-edit-form.is-locked {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.ts-wrapper.multi .ts-control {
+    min-height: 48px;
+    padding: 8px 10px;
+}
+
+.ts-wrapper .ts-control > input {
+    min-width: 180px;
+}
+
+@media (max-width: 900px) {
+    .wpa-filter-grid,
+    .wpa-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wpa-card {
+        padding: 18px;
+    }
+
+    .wpa-card-header h2 {
+        font-size: 24px;
+    }
+}
+
+.wpa-featured-image-box {
+    margin-bottom: 24px;
+}
+
+.wpa-featured-image-box > label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.wpa-featured-image-wrap {
+    border: 1px solid #dcdcde;
+    padding: 12px;
+    background: #fff;
+}
+
+.wpa-featured-image-preview {
+    display: block;
+    height: auto;
+    max-width: 400px;
+}
+
+.wpa-featured-image-empty {
+    border: 1px dashed #c3c4c7;
+    padding: 16px;
+    background: #f6f7f7;
+    color: #646970;
+}
