@@ -1,18 +1,19 @@
 <?php
+
 /**
  * Plugin Name: WP Automation Frontend Editor
- * Plugin URI:  https://creaconnect.ch/
+ * Plugin URI: https://creaconnect.ch/
  * Description: Frontend-Übersicht und Bearbeitung für Beiträge vom Autor wp-automation.
- * Version:     1.2.0
- * Author:      CreaConnect
+ * Version: 1.4.1
+ * Author: CreaConnect
  * Text Domain: wp-automation-editor
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-    exit;
+	exit;
 }
 
-define( 'WPA_EDITOR_PLUGIN_VERSION', '1.2.0' );
+define( 'WPA_EDITOR_PLUGIN_VERSION', '1.4.1' );
 define( 'WPA_EDITOR_PLUGIN_FILE', __FILE__ );
 define( 'WPA_EDITOR_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPA_EDITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -23,6 +24,9 @@ require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-post
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-lock-handler.php';
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-cleanup-handler.php';
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-shortcode.php';
+require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-import-handler.php';
+require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-import-shortcode.php';
+require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-image-import-shortcode.php';
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-plugin.php';
 
 register_activation_hook( WPA_EDITOR_PLUGIN_FILE, array( 'WPA_Automation_Editor_Cleanup_Handler', 'activate' ) );
