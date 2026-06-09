@@ -260,11 +260,13 @@
     }
 }
 
-.wpa-featured-image-box {
+.wpa-featured-image-box,
+.wpa-midjourney-box {
     margin-bottom: 24px;
 }
 
-.wpa-featured-image-box > label {
+.wpa-featured-image-box > label,
+.wpa-midjourney-box > label {
     display: block;
     font-weight: 600;
     margin-bottom: 8px;
