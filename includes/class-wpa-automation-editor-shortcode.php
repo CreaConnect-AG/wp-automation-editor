@@ -299,8 +299,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
 
             if ( function_exists( 'get_field' ) ) {
                 $newsletter_id = get_field( 'newsletter_id', $post_id );
+				$midjourney_prompt = get_field( 'midjourney_prompt_en', $post_id );
             } else {
                 $newsletter_id = get_post_meta( $post_id, 'newsletter_id', true );
+				$midjourney_prompt = get_post_meta( $post_id, 'midjourney_prompt_en', true );
             }
 
             $newsletter_id = '' !== (string) $newsletter_id ? absint( $newsletter_id ) : '';
@@ -330,6 +332,13 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                         </div>
                     <?php endif; ?>
                 </div>
+				
+				<div class="wpa-midjourney-box">
+					<label><?php esc_html_e( 'Midjourney Prompt', 'wp-automation-editor' ); ?></label>
+					<div class="wpa-featured-image-wrap">
+						<?php echo $midjourney_prompt; ?>
+					</div>
+				</div>
 
                 <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wpa-edit-form">
                     <input type="hidden" name="action" value="wpa_save_post">
