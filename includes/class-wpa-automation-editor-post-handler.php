@@ -47,9 +47,15 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             }
 
             $post_title = isset( $_POST['post_title'] ) ? sanitize_text_field( wp_unslash( $_POST['post_title'] ) ) : '';
+
             $post_content = isset( $_POST['post_content'] ) ? wp_kses_post( wp_unslash( $_POST['post_content'] ) ) : '';
+
             $post_excerpt = isset( $_POST['post_excerpt'] ) ? wp_kses_post( wp_unslash( $_POST['post_excerpt'] ) ) : '';
+
+            $old_workflow_status = WPA_Automation_Editor_Helpers::get_post_workflow_status( $post_id );
+
             $workflow_status = isset( $_POST['workflow_status'] ) ? sanitize_key( wp_unslash( $_POST['workflow_status'] ) ) : 'unbearbeitet';
+
             $newsletter_id = isset( $_POST['newsletter_id'] ) && '' !== wp_unslash( $_POST['newsletter_id'] )
                 ? absint( wp_unslash( $_POST['newsletter_id'] ) )
                 : '';
@@ -120,13 +126,66 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             }
 
 			WPA_Automation_Editor_Helpers::update_post_workflow_status( $post_id, $workflow_status );
-			
+
             update_post_meta( $post_id, WPA_Automation_Editor_Helpers::META_FRONTEND_EDITED, 'unbearbeitet' === $workflow_status ? '0' : '1' );
+
             update_post_meta( $post_id, WPA_Automation_Editor_Helpers::META_LAST_EDITED_BY, get_current_user_id() );
+
             update_post_meta( $post_id, WPA_Automation_Editor_Helpers::META_LAST_EDITED_AT, current_time( 'mysql' ) );
+
+            if ( 'fertig' !== $old_workflow_status && 'fertig' === $workflow_status ) {
+                $this->send_teams_published_notification( $post_id );
+            }
 
             wp_safe_redirect( add_query_arg( 'wpa_notice', 'saved', $redirect_url ) );
             exit;
+        }
+
+        private function send_teams_published_notification( $post_id ) {
+            $webhook_url = 'https://YOUR-WEBHOOK-URL-HERE';
+
+            if ( empty( $webhook_url ) || 'https://YOUR-WEBHOOK-URL-HERE' === $webhook_url ) {
+                return;
+            }
+
+            $post = get_post( $post_id );
+
+            if ( ! $post instanceof WP_Post ) {
+                return;
+            }
+
+            $current_user = wp_get_current_user();
+
+            $payload = array(
+                'title'        => get_the_title( $post_id ),
+                'post_id'      => $post_id,
+                'post_url'     => get_permalink( $post_id ),
+                'edit_url'     => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
+                'author'       => $current_user && $current_user->exists() ? $current_user->display_name : '',
+                'published_at' => current_time( 'mysql' ),
+            );
+
+            $response = wp_remote_post(
+                $webhook_url,
+                array(
+                    'timeout' => 10,
+                    'headers' => array(
+                        'Content-Type' => 'application/json',
+                    ),
+                    'body'    => wp_json_encode( $payload ),
+                )
+            );
+
+            if ( is_wp_error( $response ) ) {
+                error_log( 'WPA Teams notification failed: ' . $response->get_error_message() );
+                return;
+            }
+
+            $response_code = wp_remote_retrieve_response_code( $response );
+
+            if ( 200 > $response_code || 299 < $response_code ) {
+                error_log( 'WPA Teams notification failed with HTTP status: ' . $response_code );
+            }
         }
     }
 }
