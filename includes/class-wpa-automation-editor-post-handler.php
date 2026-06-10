@@ -65,24 +65,24 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             if ( ! isset( $status_options[ $workflow_status ] ) ) {
                 $workflow_status = 'unbearbeitet';
             }
-			
-			$post_update_data = array(
-				'ID'           => $post_id,
-				'post_title'   => $post_title,
-				'post_content' => $post_content,
-				'post_excerpt' => $post_excerpt,
-			);
 
-			if ( 'fertig' === $workflow_status ) {
-				$post_type_object = get_post_type_object( $post->post_type );
+            $post_update_data = array(
+                'ID'           => $post_id,
+                'post_title'   => $post_title,
+                'post_content' => $post_content,
+                'post_excerpt' => $post_excerpt,
+            );
 
-				if ( $post_type_object && ! current_user_can( $post_type_object->cap->publish_posts ) ) {
-					wp_safe_redirect( add_query_arg( 'wpa_notice', 'forbidden', $redirect_url ) );
-					exit;
-				}
+            if ( 'fertig' === $workflow_status ) {
+                $post_type_object = get_post_type_object( $post->post_type );
 
-				$post_update_data['post_status'] = 'publish';
-			}
+                if ( $post_type_object && ! current_user_can( $post_type_object->cap->publish_posts ) ) {
+                    wp_safe_redirect( add_query_arg( 'wpa_notice', 'forbidden', $redirect_url ) );
+                    exit;
+                }
+
+                $post_update_data['post_status'] = 'publish';
+            }
 
             $updated_post_id = wp_update_post( $post_update_data, true );
 
@@ -125,7 +125,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 }
             }
 
-			WPA_Automation_Editor_Helpers::update_post_workflow_status( $post_id, $workflow_status );
+            WPA_Automation_Editor_Helpers::update_post_workflow_status( $post_id, $workflow_status );
 
             update_post_meta( $post_id, WPA_Automation_Editor_Helpers::META_FRONTEND_EDITED, 'unbearbeitet' === $workflow_status ? '0' : '1' );
 
@@ -133,15 +133,15 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
             update_post_meta( $post_id, WPA_Automation_Editor_Helpers::META_LAST_EDITED_AT, current_time( 'mysql' ) );
 
-            if ( 'fertig' !== $old_workflow_status && 'fertig' === $workflow_status ) {
-                $this->send_teams_published_notification( $post_id );
+            if ( $old_workflow_status !== $workflow_status ) {
+                $this->send_teams_status_change_notification( $post_id, $old_workflow_status, $workflow_status );
             }
 
             wp_safe_redirect( add_query_arg( 'wpa_notice', 'saved', $redirect_url ) );
             exit;
         }
 
-        private function send_teams_published_notification( $post_id ) {
+        private function send_teams_status_change_notification( $post_id, $old_workflow_status, $new_workflow_status ) {
             $webhook_url = 'https://YOUR-WEBHOOK-URL-HERE';
 
             if ( empty( $webhook_url ) || 'https://YOUR-WEBHOOK-URL-HERE' === $webhook_url ) {
@@ -154,15 +154,20 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 return;
             }
 
+            $status_options = WPA_Automation_Editor_Helpers::get_workflow_status_options();
             $current_user = wp_get_current_user();
 
             $payload = array(
-                'title'        => get_the_title( $post_id ),
-                'post_id'      => $post_id,
-                'post_url'     => get_permalink( $post_id ),
-                'edit_url'     => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
-                'author'       => $current_user && $current_user->exists() ? $current_user->display_name : '',
-                'published_at' => current_time( 'mysql' ),
+                'title'                     => get_the_title( $post_id ),
+                'post_id'                   => $post_id,
+                'post_url'                  => get_permalink( $post_id ),
+                'edit_url'                  => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
+                'author'                    => $current_user && $current_user->exists() ? $current_user->display_name : '',
+                'changed_at'                => current_time( 'mysql' ),
+                'old_workflow_status'       => $old_workflow_status,
+                'old_workflow_status_label' => isset( $status_options[ $old_workflow_status ] ) ? $status_options[ $old_workflow_status ] : $old_workflow_status,
+                'workflow_status'           => $new_workflow_status,
+                'workflow_status_label'     => isset( $status_options[ $new_workflow_status ] ) ? $status_options[ $new_workflow_status ] : $new_workflow_status,
             );
 
             $response = wp_remote_post(
@@ -177,14 +182,14 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             );
 
             if ( is_wp_error( $response ) ) {
-                error_log( 'WPA Teams notification failed: ' . $response->get_error_message() );
+                error_log( 'WPA Teams status notification failed: ' . $response->get_error_message() );
                 return;
             }
 
             $response_code = wp_remote_retrieve_response_code( $response );
 
             if ( 200 > $response_code || 299 < $response_code ) {
-                error_log( 'WPA Teams notification failed with HTTP status: ' . $response_code );
+                error_log( 'WPA Teams status notification failed with HTTP status: ' . $response_code );
             }
         }
     }
