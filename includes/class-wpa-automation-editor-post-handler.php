@@ -157,6 +157,23 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             $status_options = WPA_Automation_Editor_Helpers::get_workflow_status_options();
             $current_user = wp_get_current_user();
 
+            $has_featured_image = has_post_thumbnail( $post_id );
+            $midjourney_prompt_en = '';
+
+            if ( ! $has_featured_image ) {
+                if ( function_exists( 'get_field' ) ) {
+                    $midjourney_prompt_en = get_field( 'midjourney_prompt_en', $post_id );
+                } else {
+                    $midjourney_prompt_en = get_post_meta( $post_id, 'midjourney_prompt_en', true );
+                }
+
+                if ( is_array( $midjourney_prompt_en ) || is_object( $midjourney_prompt_en ) ) {
+                    $midjourney_prompt_en = wp_json_encode( $midjourney_prompt_en );
+                }
+
+                $midjourney_prompt_en = sanitize_textarea_field( (string) $midjourney_prompt_en );
+            }
+
             $payload = array(
                 'title'                     => get_the_title( $post_id ),
                 'post_id'                   => $post_id,
@@ -168,6 +185,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 'old_workflow_status_label' => isset( $status_options[ $old_workflow_status ] ) ? $status_options[ $old_workflow_status ] : $old_workflow_status,
                 'workflow_status'           => $new_workflow_status,
                 'workflow_status_label'     => isset( $status_options[ $new_workflow_status ] ) ? $status_options[ $new_workflow_status ] : $new_workflow_status,
+
+                'has_featured_image'        => $has_featured_image,
+                'featured_image_status'     => $has_featured_image ? 'set' : 'missing',
+                'midjourney_prompt_en'      => $midjourney_prompt_en,
             );
 
             $response = wp_remote_post(

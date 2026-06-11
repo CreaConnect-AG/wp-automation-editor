@@ -29,26 +29,35 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			check_ajax_referer( 'wpa_import_post_to_remote', 'nonce' );
 
 			$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+
 			if ( ! $post_id ) {
 				wp_send_json_error( array( 'message' => __( 'Ungültiger Beitrag.', 'wp-automation-editor' ) ), 400 );
 			}
 
 			$result = $this->import_post_to_remote( $post_id );
+
 			if ( is_wp_error( $result ) ) {
 				$status_code = $this->get_error_status( $result );
+
 				if ( $status_code < 400 ) {
 					$status_code = 500;
 				}
 
+				$error_data = array(
+					'message'    => $result->get_error_message(),
+					'status'     => $status_code,
+					'stop_queue' => $this->should_stop_queue( $result ),
+				);
+
+				$this->send_teams_import_notification( $post_id, false, $error_data );
+
 				wp_send_json_error(
-					array(
-						'message'    => $result->get_error_message(),
-						'status'    => $status_code,
-						'stop_queue' => $this->should_stop_queue( $result ),
-					),
+					$error_data,
 					$status_code
 				);
 			}
+
+			$this->send_teams_import_notification( $post_id, true, $result );
 
 			wp_send_json_success( $result );
 		}
@@ -760,6 +769,128 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			update_post_meta( $post_id, self::META_LAST_IMPORT_ERROR, $error->get_error_message() );
 			$this->log_message( 'Import failed for local post ' . absint( $post_id ) . ': ' . $error->get_error_message() );
 			return $error;
+		}
+
+		private static function get_import_teams_webhook_url() {
+			$webhook_url = defined( 'WPA_EDITOR_IMPORT_TEAMS_WEBHOOK_URL' )
+				? WPA_EDITOR_IMPORT_TEAMS_WEBHOOK_URL
+				: 'https://YOUR-IMPORT-WEBHOOK-URL-HERE';
+
+			return (string) apply_filters( 'wpa_automation_editor_import_teams_webhook_url', $webhook_url );
+		}
+
+		private function send_teams_import_notification( $post_id, $import_successful, $result_data = array() ) {
+			$webhook_url = self::get_import_teams_webhook_url();
+
+			if ( empty( $webhook_url ) || 'https://YOUR-IMPORT-WEBHOOK-URL-HERE' === $webhook_url ) {
+				return;
+			}
+
+			$post = get_post( $post_id );
+
+			if ( ! $post instanceof WP_Post ) {
+				return;
+			}
+
+			$current_user = wp_get_current_user();
+
+			$remote_post_id = 0;
+			$remote_url = '';
+			$message = '';
+			$status_code = 0;
+			$stop_queue = false;
+
+			if ( is_array( $result_data ) ) {
+				$remote_post_id = ! empty( $result_data['remote_post_id'] ) ? absint( $result_data['remote_post_id'] ) : 0;
+				$remote_url = ! empty( $result_data['remote_url'] ) ? esc_url_raw( $result_data['remote_url'] ) : '';
+				$message = ! empty( $result_data['message'] ) ? sanitize_textarea_field( (string) $result_data['message'] ) : '';
+				$status_code = ! empty( $result_data['status'] ) ? absint( $result_data['status'] ) : 0;
+				$stop_queue = ! empty( $result_data['stop_queue'] );
+			}
+
+			if ( ! $remote_post_id ) {
+				$remote_post_id = absint( get_post_meta( $post_id, self::META_REMOTE_POST_ID, true ) );
+			}
+
+			if ( ! $remote_url && $remote_post_id ) {
+				$remote_url = self::get_remote_post_url( $remote_post_id );
+			}
+
+			$has_featured_image = has_post_thumbnail( $post_id );
+			$remote_media_status = (string) get_post_meta( $post_id, self::META_REMOTE_MEDIA_STATUS, true );
+			$remote_media_error = (string) get_post_meta( $post_id, self::META_REMOTE_MEDIA_ERROR, true );
+
+			$featured_image_status = 'unknown';
+			$featured_image_status_label = __( 'Unbekannt', 'wp-automation-editor' );
+
+			if ( ! $has_featured_image ) {
+				$featured_image_status = 'not_set';
+				$featured_image_status_label = __( 'Kein Beitragsbild gesetzt.', 'wp-automation-editor' );
+			} elseif ( self::MEDIA_STATUS_DONE === $remote_media_status ) {
+				$featured_image_status = 'set';
+				$featured_image_status_label = __( 'Beitragsbild wurde gesetzt.', 'wp-automation-editor' );
+			} elseif ( self::MEDIA_STATUS_PENDING === $remote_media_status ) {
+				$featured_image_status = 'pending';
+				$featured_image_status_label = __( 'Beitragsbild ist für den Import vorgemerkt.', 'wp-automation-editor' );
+			} elseif ( self::MEDIA_STATUS_FAILED === $remote_media_status ) {
+				$featured_image_status = 'failed';
+				$featured_image_status_label = __( 'Beitragsbild-Import fehlgeschlagen.', 'wp-automation-editor' );
+			} elseif ( self::MEDIA_STATUS_SKIPPED === $remote_media_status ) {
+				$featured_image_status = 'skipped';
+				$featured_image_status_label = __( 'Beitragsbild-Import übersprungen.', 'wp-automation-editor' );
+			}
+
+			$midjourney_prompt_en = '';
+
+			if ( ! $has_featured_image ) {
+				$midjourney_prompt_en = $this->get_field_value( 'midjourney_prompt_en', $post_id );
+				$midjourney_prompt_en = sanitize_textarea_field( (string) $midjourney_prompt_en );
+			}
+
+			$payload = array(
+				'notification_type'           => 'remote_import',
+				'import_successful'           => (bool) $import_successful,
+				'import_status'               => $import_successful ? 'successful' : 'failed',
+				'title'                       => get_the_title( $post_id ),
+				'post_id'                     => $post_id,
+				'post_url'                    => get_permalink( $post_id ),
+				'edit_url'                    => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
+				'author'                      => $current_user && $current_user->exists() ? $current_user->display_name : '',
+				'imported_at'                 => current_time( 'mysql' ),
+				'remote_post_id'              => $remote_post_id,
+				'remote_url'                  => $remote_url,
+				'message'                     => $message,
+				'status_code'                 => $status_code,
+				'stop_queue'                  => $stop_queue,
+				'has_featured_image'          => $has_featured_image,
+				'featured_image_status'       => $featured_image_status,
+				'featured_image_status_label' => $featured_image_status_label,
+				'remote_media_status'         => $remote_media_status,
+				'remote_media_error'          => $remote_media_error,
+				'midjourney_prompt_en'        => $midjourney_prompt_en,
+			);
+
+			$response = wp_remote_post(
+				$webhook_url,
+				array(
+					'timeout' => 10,
+					'headers' => array(
+						'Content-Type' => 'application/json',
+					),
+					'body'    => wp_json_encode( $payload ),
+				)
+			);
+
+			if ( is_wp_error( $response ) ) {
+				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ': ' . $response->get_error_message() );
+				return;
+			}
+
+			$response_code = wp_remote_retrieve_response_code( $response );
+
+			if ( 200 > $response_code || 299 < $response_code ) {
+				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ' with HTTP status: ' . $response_code );
+			}
 		}
 
 		private function log_message( $message ) {
