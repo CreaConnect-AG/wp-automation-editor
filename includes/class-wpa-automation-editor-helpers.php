@@ -338,6 +338,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
                     'message' => __( 'Beim Speichern ist ein Fehler aufgetreten.', 'wp-automation-editor' ),
                     'type'    => 'error',
                 ),
+                'featured_image_error' => array(
+                    'message' => __( 'Das Beitragsbild konnte nicht hochgeladen werden. Bitte prüfe Dateityp und Dateigrösse.', 'wp-automation-editor' ),
+                    'type'    => 'error',
+                ),
                 'locked' => array(
                     'message' => __( 'Dieser Beitrag wird aktuell von einer anderen Person bearbeitet.', 'wp-automation-editor' ),
                     'type'    => 'error',

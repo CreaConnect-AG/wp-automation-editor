@@ -91,6 +91,13 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 exit;
             }
 
+            $featured_image_result = $this->handle_featured_image_upload( $post_id );
+
+            if ( is_wp_error( $featured_image_result ) ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'featured_image_error', $redirect_url ) );
+                exit;
+            }
+
             $category_ids = array();
 
             if ( isset( $_POST['post_categories'] ) && is_array( $_POST['post_categories'] ) ) {
@@ -139,6 +146,57 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
             wp_safe_redirect( add_query_arg( 'wpa_notice', 'saved', $redirect_url ) );
             exit;
+        }
+
+        private function handle_featured_image_upload( $post_id ) {
+            $remove_featured_image = isset( $_POST['remove_featured_image'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['remove_featured_image'] ) );
+
+            $has_featured_image_upload = isset( $_FILES['wpa_featured_image'] )
+                && is_array( $_FILES['wpa_featured_image'] )
+                && ! empty( $_FILES['wpa_featured_image']['name'] )
+                && isset( $_FILES['wpa_featured_image']['error'] )
+                && UPLOAD_ERR_NO_FILE !== $_FILES['wpa_featured_image']['error'];
+
+            if ( ! $has_featured_image_upload ) {
+                if ( $remove_featured_image ) {
+                    delete_post_thumbnail( $post_id );
+                }
+
+                return true;
+            }
+
+            if ( ! current_user_can( 'upload_files' ) ) {
+                return new WP_Error( 'wpa_upload_forbidden', __( 'Du hast keine Berechtigung, Bilder hochzuladen.', 'wp-automation-editor' ) );
+            }
+
+            if ( ! function_exists( 'media_handle_upload' ) ) {
+                require_once ABSPATH . 'wp-admin/includes/image.php';
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+                require_once ABSPATH . 'wp-admin/includes/media.php';
+            }
+
+            $attachment_id = media_handle_upload(
+                'wpa_featured_image',
+                $post_id,
+                array(),
+                array(
+                    'test_form' => false,
+                    'mimes'     => array(
+                        'jpg|jpeg|jpe' => 'image/jpeg',
+                        'png'          => 'image/png',
+                        'gif'          => 'image/gif',
+                        'webp'         => 'image/webp',
+                    ),
+                )
+            );
+
+            if ( is_wp_error( $attachment_id ) ) {
+                return $attachment_id;
+            }
+
+            set_post_thumbnail( $post_id, $attachment_id );
+
+            return true;
         }
 
         public function handle_trash_post() {

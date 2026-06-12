@@ -51,21 +51,21 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             return ob_get_clean();
         }
 
-		private function render_dashboard( $author_id ) {
-			$current_status_filter = isset( $_GET['wpa_status'] ) ? sanitize_key( wp_unslash( $_GET['wpa_status'] ) ) : 'offen';
-			$current_date_filter = isset( $_GET['wpa_date'] ) ? sanitize_key( wp_unslash( $_GET['wpa_date'] ) ) : '7days';
-			$current_page = isset( $_GET['wpa_page_num'] ) ? max( 1, absint( $_GET['wpa_page_num'] ) ) : 1;
+        private function render_dashboard( $author_id ) {
+            $current_status_filter = isset( $_GET['wpa_status'] ) ? sanitize_key( wp_unslash( $_GET['wpa_status'] ) ) : 'offen';
+            $current_date_filter = isset( $_GET['wpa_date'] ) ? sanitize_key( wp_unslash( $_GET['wpa_date'] ) ) : '7days';
+            $current_page = isset( $_GET['wpa_page_num'] ) ? max( 1, absint( $_GET['wpa_page_num'] ) ) : 1;
 
-			$date_filter_options = WPA_Automation_Editor_Helpers::get_date_filter_options();
-			$status_filter_options = WPA_Automation_Editor_Helpers::get_dashboard_status_filter_options();
+            $date_filter_options = WPA_Automation_Editor_Helpers::get_date_filter_options();
+            $status_filter_options = WPA_Automation_Editor_Helpers::get_dashboard_status_filter_options();
 
-			if ( ! isset( $date_filter_options[ $current_date_filter ] ) ) {
-				$current_date_filter = '7days';
-			}
+            if ( ! isset( $date_filter_options[ $current_date_filter ] ) ) {
+                $current_date_filter = '7days';
+            }
 
-			if ( ! isset( $status_filter_options[ $current_status_filter ] ) ) {
-				$current_status_filter = 'offen';
-			}
+            if ( ! isset( $status_filter_options[ $current_status_filter ] ) ) {
+                $current_status_filter = 'offen';
+            }
 
             $query_args = array(
                 'post_type'           => 'post',
@@ -125,13 +125,13 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                     <div class="wpa-filter-grid">
                         <div>
                             <label for="wpa_status"><?php esc_html_e( 'Status', 'wp-automation-editor' ); ?></label>
-							<select id="wpa_status" name="wpa_status">
-								<?php foreach ( $status_filter_options as $status_key => $status_label ) : ?>
-								<option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_key, $current_status_filter ); ?>>
-									<?php echo esc_html( $status_label ); ?>
-								</option>
-								<?php endforeach; ?>
-							</select>
+                            <select id="wpa_status" name="wpa_status">
+                                <?php foreach ( $status_filter_options as $status_key => $status_label ) : ?>
+                                    <option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_key, $current_status_filter ); ?>>
+                                        <?php echo esc_html( $status_label ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
 
                         <div>
@@ -304,10 +304,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
 
             if ( function_exists( 'get_field' ) ) {
                 $newsletter_id = get_field( 'newsletter_id', $post_id );
-				$midjourney_prompt = get_field( 'midjourney_prompt_en', $post_id );
+                $midjourney_prompt = get_field( 'midjourney_prompt_en', $post_id );
             } else {
                 $newsletter_id = get_post_meta( $post_id, 'newsletter_id', true );
-				$midjourney_prompt = get_post_meta( $post_id, 'midjourney_prompt_en', true );
+                $midjourney_prompt = get_post_meta( $post_id, 'midjourney_prompt_en', true );
             }
 
             $newsletter_id = '' !== (string) $newsletter_id ? absint( $newsletter_id ) : '';
@@ -324,32 +324,71 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                     </div>
                 </div>
 
-                <div class="wpa-featured-image-box">
-                    <label><?php esc_html_e( 'Beitragsbild', 'wp-automation-editor' ); ?></label>
-
-                    <?php if ( ! empty( $featured_image_html ) ) : ?>
-                        <div class="wpa-featured-image-wrap">
-                            <?php echo wp_kses_post( $featured_image_html ); ?>
-                        </div>
-                    <?php else : ?>
-                        <div class="wpa-featured-image-empty">
-                            <?php esc_html_e( 'Für diesen Beitrag ist noch kein Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-				
-				<div class="wpa-midjourney-box">
-					<label><?php esc_html_e( 'Midjourney Prompt', 'wp-automation-editor' ); ?></label>
-					<div class="wpa-featured-image-wrap">
-						<?php echo $midjourney_prompt; ?>
-					</div>
-				</div>
-
-                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wpa-edit-form">
+                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wpa-edit-form" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="wpa_save_post">
                     <input type="hidden" name="post_id" value="<?php echo esc_attr( $post_id ); ?>">
                     <input type="hidden" name="redirect_url" value="<?php echo esc_url( WPA_Automation_Editor_Helpers::get_edit_url( $post_id ) ); ?>">
                     <?php wp_nonce_field( 'wpa_save_post_' . $post_id, 'wpa_nonce' ); ?>
+
+                    <div class="wpa-featured-image-box">
+                        <label for="wpa_featured_image"><?php esc_html_e( 'Beitragsbild', 'wp-automation-editor' ); ?></label>
+
+                        <?php if ( ! empty( $featured_image_html ) ) : ?>
+                            <div class="wpa-featured-image-wrap">
+                                <?php echo wp_kses_post( $featured_image_html ); ?>
+                            </div>
+
+                            <?php if ( current_user_can( 'upload_files' ) ) : ?>
+                                <div class="wpa-featured-image-upload">
+                                    <input
+                                        type="file"
+                                        id="wpa_featured_image"
+                                        name="wpa_featured_image"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
+                                    >
+
+                                    <p class="wpa-help-text">
+                                        <?php esc_html_e( 'Optional ein neues Bild auswählen. Es wird beim Speichern als neues Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
+                                    </p>
+
+                                    <label class="wpa-checkbox-label">
+                                        <input type="checkbox" name="remove_featured_image" value="1">
+                                        <?php esc_html_e( 'Aktuelles Beitragsbild entfernen', 'wp-automation-editor' ); ?>
+                                    </label>
+                                </div>
+                            <?php endif; ?>
+                        <?php else : ?>
+                            <div class="wpa-featured-image-empty">
+                                <?php esc_html_e( 'Für diesen Beitrag ist noch kein Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
+                            </div>
+
+                            <?php if ( current_user_can( 'upload_files' ) ) : ?>
+                                <div class="wpa-featured-image-upload">
+                                    <input
+                                        type="file"
+                                        id="wpa_featured_image"
+                                        name="wpa_featured_image"
+                                        accept="image/jpeg,image/png,image/gif,image/webp"
+                                    >
+
+                                    <p class="wpa-help-text">
+                                        <?php esc_html_e( 'Bild auswählen und danach unten auf Speichern klicken.', 'wp-automation-editor' ); ?>
+                                    </p>
+                                </div>
+                            <?php else : ?>
+                                <p class="wpa-help-text">
+                                    <?php esc_html_e( 'Du hast keine Berechtigung, Bilder hochzuladen.', 'wp-automation-editor' ); ?>
+                                </p>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="wpa-midjourney-box">
+                        <label><?php esc_html_e( 'Midjourney Prompt', 'wp-automation-editor' ); ?></label>
+                        <div class="wpa-featured-image-wrap">
+                            <?php echo nl2br( esc_html( $midjourney_prompt ) ); ?>
+                        </div>
+                    </div>
 
                     <div class="wpa-form-grid">
                         <div class="wpa-form-row">
@@ -358,19 +397,19 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                         </div>
 
                         <div class="wpa-form-row">
-							<label for="wpa_newsletter_id"><?php esc_html_e( 'Newsletter ID', 'wp-automation-editor' ); ?></label>
-							<input
-								type="number"
-								id="wpa_newsletter_id"
-								name="newsletter_id"
-								min="0"
-								step="1"
-								value="<?php echo esc_attr( $newsletter_id ); ?>"
-							>
-							<p class="wpa-help-text">
-								<?php esc_html_e( 'Hier die Newsletter-Nummer angeben, falls der Beitrag in den Newsletter kommen soll.', 'wp-automation-editor' ); ?>
-							</p>
-						</div>
+                            <label for="wpa_newsletter_id"><?php esc_html_e( 'Newsletter ID', 'wp-automation-editor' ); ?></label>
+                            <input
+                                type="number"
+                                id="wpa_newsletter_id"
+                                name="newsletter_id"
+                                min="0"
+                                step="1"
+                                value="<?php echo esc_attr( $newsletter_id ); ?>"
+                            >
+                            <p class="wpa-help-text">
+                                <?php esc_html_e( 'Hier die Newsletter-Nummer angeben, falls der Beitrag in den Newsletter kommen soll.', 'wp-automation-editor' ); ?>
+                            </p>
+                        </div>
                     </div>
 
                     <div class="wpa-form-row">
