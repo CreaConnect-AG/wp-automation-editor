@@ -155,6 +155,34 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
             );
         }
 
+        public static function render_trash_post_form( $post_id, $redirect_url = '' ) {
+            $post_id = absint( $post_id );
+
+            if ( ! $post_id || ! current_user_can( 'delete_post', $post_id ) ) {
+                return '';
+            }
+
+            if ( '' === $redirect_url ) {
+                $redirect_url = self::get_base_page_url();
+            }
+
+            ob_start();
+            ?>
+            <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wpa-inline-action-form" onsubmit="return confirm('<?php echo esc_js( __( 'Diesen Beitrag wirklich in den Papierkorb verschieben?', 'wp-automation-editor' ) ); ?>');">
+                <input type="hidden" name="action" value="wpa_trash_post">
+                <input type="hidden" name="post_id" value="<?php echo esc_attr( $post_id ); ?>">
+                <input type="hidden" name="redirect_to" value="<?php echo esc_url( $redirect_url ); ?>">
+                <?php wp_nonce_field( 'wpa_trash_post_' . $post_id ); ?>
+                <button type="submit" class="wpa-button wpa-button-danger wpa-icon-button" title="<?php esc_attr_e( 'Löschen', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'Löschen', 'wp-automation-editor' ); ?>">
+                    <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                    <span class="wpa-screen-reader-text"><?php esc_html_e( 'löschen', 'wp-automation-editor' ); ?></span>
+                </button>
+            </form>
+            <?php
+
+            return ob_get_clean();
+        }
+
 		public static function get_dashboard_status_filter_options() {
 			$status_options = self::get_workflow_status_options();
 
@@ -312,6 +340,14 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
                 ),
                 'locked' => array(
                     'message' => __( 'Dieser Beitrag wird aktuell von einer anderen Person bearbeitet.', 'wp-automation-editor' ),
+                    'type'    => 'error',
+                ),
+                'trashed' => array(
+                    'message' => __( 'Der Beitrag wurde in den Papierkorb verschoben.', 'wp-automation-editor' ),
+                    'type'    => 'success',
+                ),
+                'trash_error' => array(
+                    'message' => __( 'Der Beitrag konnte nicht in den Papierkorb verschoben werden.', 'wp-automation-editor' ),
                     'type'    => 'error',
                 ),
             );

@@ -30,6 +30,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                 );
             }
 
+            wp_enqueue_style( 'dashicons' );
+
             ob_start();
 
             echo '<div class="wpa-editor-wrap">';
@@ -161,7 +163,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                     <th><?php esc_html_e( 'Datum', 'wp-automation-editor' ); ?></th>
                                     <th><?php esc_html_e( 'Status', 'wp-automation-editor' ); ?></th>
                                     <th><?php esc_html_e( 'Kategorien', 'wp-automation-editor' ); ?></th>
-                                    <th><?php esc_html_e( 'Bearbeiten', 'wp-automation-editor' ); ?></th>
+                                    <th><?php esc_html_e( 'Aktionen', 'wp-automation-editor' ); ?></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -187,10 +189,13 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                             </span>
                                         </td>
                                         <td><?php echo esc_html( ! empty( $category_names ) ? implode( ', ', $category_names ) : '—' ); ?></td>
-                                        <td>
-                                            <a class="wpa-button wpa-button-primary" href="<?php echo esc_url( WPA_Automation_Editor_Helpers::get_edit_url( $post_id ) ); ?>">
-                                                <?php esc_html_e( 'bearbeiten', 'wp-automation-editor' ); ?>
+                                        <td class="actions">
+                                            <a class="wpa-button wpa-button-primary wpa-icon-button" href="<?php echo esc_url( WPA_Automation_Editor_Helpers::get_edit_url( $post_id ) ); ?>" title="<?php esc_attr_e( 'Bearbeiten', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'Bearbeiten', 'wp-automation-editor' ); ?>">
+                                                <span class="dashicons dashicons-edit" aria-hidden="true"></span>
+                                                <span class="wpa-screen-reader-text"><?php esc_html_e( 'bearbeiten', 'wp-automation-editor' ); ?></span>
                                             </a>
+
+                                            <?php echo WPA_Automation_Editor_Helpers::render_trash_post_form( $post_id, WPA_Automation_Editor_Helpers::get_base_page_url() ); ?>
                                         </td>
                                     </tr>
                                 <?php endwhile; ?>

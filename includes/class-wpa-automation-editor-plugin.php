@@ -32,6 +32,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Plugin' ) ) {
 			add_shortcode( WPA_Automation_Editor_Import_Shortcode::SHORTCODE, array( $this->import_shortcode, 'render_shortcode' ) );
 			add_shortcode( WPA_Automation_Editor_Image_Import_Shortcode::SHORTCODE, array( $this->image_import_shortcode, 'render_shortcode' ) );
 			add_action( 'admin_post_wpa_save_post', array( $this->post_handler, 'handle_save_post' ) );
+			add_action( 'admin_post_wpa_trash_post', array( $this->post_handler, 'handle_trash_post' ) );
 			add_action( 'wp_ajax_wpa_refresh_post_lock', array( $this->lock_handler, 'refresh_post_lock' ) );
 			add_action( 'wp_ajax_wpa_import_post_to_remote', array( $this->import_handler, 'handle_import_post' ) );
 			add_action( 'wp_ajax_wpa_import_featured_image_to_remote', array( $this->import_handler, 'handle_import_featured_image' ) );

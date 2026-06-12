@@ -97,6 +97,12 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 										$pending_remote_post_id = absint( get_post_meta( $post_id, WPA_Automation_Editor_Import_Handler::META_PENDING_REMOTE_POST_ID, true ) );
 										$last_import_error = get_post_meta( $post_id, WPA_Automation_Editor_Import_Handler::META_LAST_IMPORT_ERROR, true );
 										$remote_link = $remote_post_id ? WPA_Automation_Editor_Import_Handler::get_remote_post_url( $remote_post_id ) : '';
+										
+										$redirect_url = add_query_arg(
+											'wpa_import_page',
+											$current_page,
+											WPA_Automation_Editor_Helpers::get_base_page_url()
+										);
 										?>
 										<tr data-wpa-import-row="<?php echo esc_attr( $post_id ); ?>">
 											<td><input type="checkbox" data-wpa-import-checkbox value="<?php echo esc_attr( $post_id ); ?>" <?php disabled( ! $remote_configured ); ?>></td>
@@ -118,10 +124,18 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 													<?php esc_html_e( 'Noch nicht importiert', 'wp-automation-editor' ); ?>
 												<?php endif; ?>
 											</td>
-											<td>
-												<button type="button" class="wpa-button wpa-button-primary" data-wpa-import-one="<?php echo esc_attr( $post_id ); ?>" <?php disabled( ! $remote_configured ); ?>>
-													<?php echo $pending_remote_post_id ? esc_html__( 'Erneut versuchen', 'wp-automation-editor' ) : esc_html__( 'Importieren', 'wp-automation-editor' ); ?>
+											<td class="actions">
+												<button type="button" class="wpa-button wpa-button-primary wpa-icon-button" data-wpa-import-one="<?php echo esc_attr( $post_id ); ?>" title="<?php echo esc_attr( $pending_remote_post_id ? __( 'Erneut versuchen', 'wp-automation-editor' ) : __( 'Importieren', 'wp-automation-editor' ) ); ?>" aria-label="<?php echo esc_attr( $pending_remote_post_id ? __( 'Erneut versuchen', 'wp-automation-editor' ) : __( 'Importieren', 'wp-automation-editor' ) ); ?>" <?php disabled( ! $remote_configured ); ?>>
+													<?php if ( $pending_remote_post_id ) : ?>
+														<span class="dashicons dashicons-update-alt" aria-hidden="true"></span>
+														<span class="wpa-screen-reader-text"><?php esc_html_e( 'Erneut versuchen', 'wp-automation-editor' ); ?></span>
+													<?php else : ?>
+														<span class="dashicons dashicons-download" aria-hidden="true"></span>
+														<span class="wpa-screen-reader-text"><?php esc_html_e( 'Importieren', 'wp-automation-editor' ); ?></span>
+													<?php endif; ?>
 												</button>
+
+												<?php echo WPA_Automation_Editor_Helpers::render_trash_post_form( $post_id, $redirect_url ); ?>
 											</td>
 										</tr>
 									<?php endwhile; ?>
@@ -142,6 +156,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 		}
 
 		private function enqueue_assets() {
+			wp_enqueue_style( 'dashicons' );
+
 			wp_enqueue_style(
 				'wpa-frontend-editor',
 				WPA_EDITOR_PLUGIN_URL . 'assets/css/frontend.css',

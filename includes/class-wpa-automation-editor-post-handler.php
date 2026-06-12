@@ -141,6 +141,55 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             exit;
         }
 
+        public function handle_trash_post() {
+            $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+
+            $redirect_url = isset( $_POST['redirect_to'] )
+                ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) )
+                : wp_get_referer();
+
+            $redirect_url = wp_validate_redirect( $redirect_url, home_url( '/' ) );
+
+            if ( ! $post_id ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'invalid_post', $redirect_url ) );
+                exit;
+            }
+
+            check_admin_referer( 'wpa_trash_post_' . $post_id );
+
+            $author_id = WPA_Automation_Editor_Helpers::get_automation_author_id();
+            $post = get_post( $post_id );
+
+            if ( ! $post instanceof WP_Post || 'post' !== $post->post_type || ! $author_id || (int) $post->post_author !== (int) $author_id ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'invalid_post', $redirect_url ) );
+                exit;
+            }
+
+            if ( ! current_user_can( 'delete_post', $post_id ) ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'forbidden', $redirect_url ) );
+                exit;
+            }
+
+            WPA_Automation_Editor_Helpers::load_post_lock_functions();
+
+            $locked_by = wp_check_post_lock( $post_id );
+
+            if ( $locked_by && (int) $locked_by !== get_current_user_id() ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'locked', $redirect_url ) );
+                exit;
+            }
+
+            $trashed_post = wp_trash_post( $post_id );
+
+            if ( ! $trashed_post ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'trash_error', $redirect_url ) );
+                exit;
+            }
+
+            wp_safe_redirect( add_query_arg( 'wpa_notice', 'trashed', $redirect_url ) );
+            exit;
+        }
+
         private function send_teams_status_change_notification( $post_id, $old_workflow_status, $new_workflow_status ) {
             $webhook_url = 'https://YOUR-WEBHOOK-URL-HERE';
 
