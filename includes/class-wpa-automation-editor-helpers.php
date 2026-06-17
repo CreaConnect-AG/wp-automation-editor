@@ -271,14 +271,6 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
                 return '';
             }
 
-            if ( function_exists( 'wp_date' ) && function_exists( 'wp_timezone' ) ) {
-                $date = DateTimeImmutable::createFromFormat( '!Y-m-d', $remote_publish_date, wp_timezone() );
-
-                if ( $date instanceof DateTimeImmutable ) {
-                    return wp_date( get_option( 'date_format' ), $date->getTimestamp(), wp_timezone() );
-                }
-            }
-
             $timestamp = strtotime( $remote_publish_date . ' 00:00:00' );
 
             if ( false === $timestamp ) {

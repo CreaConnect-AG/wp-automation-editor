@@ -49,15 +49,24 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 					'stop_queue' => $this->should_stop_queue( $result ),
 				);
 
-				$this->send_teams_import_notification( $post_id, false, $error_data );
+				try {
+					$this->send_teams_import_notification( $post_id, false, $error_data );
+				} catch ( Throwable $exception ) {
+					$this->log_message(
+						'Import Teams notification crashed for local post ' . absint( $post_id ) . ': ' . $exception->getMessage()
+					);
+				}
 
-				wp_send_json_error(
-					$error_data,
-					$status_code
-				);
+				wp_send_json_error( $error_data, $status_code );
 			}
 
-			$this->send_teams_import_notification( $post_id, true, $result );
+			try {
+				$this->send_teams_import_notification( $post_id, true, $result );
+			} catch ( Throwable $exception ) {
+				$this->log_message(
+					'Import Teams notification crashed for local post ' . absint( $post_id ) . ': ' . $exception->getMessage()
+				);
+			}
 
 			wp_send_json_success( $result );
 		}

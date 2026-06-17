@@ -350,7 +350,8 @@ td.actions a, td.actions button {
 }
 
 td.actions {
-    padding: 15px 0px;
+    padding: 15px 15px;
+    min-width: 125px;
 }
 
 .wpa-featured-image-upload {
