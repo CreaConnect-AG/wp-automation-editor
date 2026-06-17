@@ -233,16 +233,6 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
             return str_replace( '-', '', $remote_publish_date );
         }
 
-        public static function clear_post_remote_publish_schedule( $post_id ) {
-            if ( function_exists( 'update_field' ) ) {
-                update_field( self::META_REMOTE_PUBLISH_DATE, '', $post_id );
-                update_field( self::META_REMOTE_PUBLISH_TIME, '', $post_id );
-            }
-
-            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_DATE, '' );
-            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_TIME, '' );
-        }
-
         public static function get_date_filter_options() {
             return array(
                 '7days'  => __( 'Letzte 7 Tage', 'wp-automation-editor' ),
