@@ -315,10 +315,17 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             $remote_publish_date = $remote_publish_schedule['date'];
             $remote_publish_time = $remote_publish_schedule['time'];
             $remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
-            $occupied_remote_publish_times = array();
+            $occupied_remote_publish_slots = array();
+            $occupied_remote_publish_slots_by_time = array();
 
             if ( '' !== $remote_publish_date ) {
-                $occupied_remote_publish_times = WPA_Automation_Editor_Helpers::get_remote_publish_occupied_times( $remote_publish_date, $post_id );
+                $occupied_remote_publish_slots = WPA_Automation_Editor_Helpers::get_remote_publish_occupied_slots( $remote_publish_date, $post_id );
+
+                foreach ( $occupied_remote_publish_slots as $occupied_remote_publish_slot ) {
+                    if ( isset( $occupied_remote_publish_slot['time'] ) ) {
+                        $occupied_remote_publish_slots_by_time[ $occupied_remote_publish_slot['time'] ] = $occupied_remote_publish_slot;
+                    }
+                }
             }
             $featured_image_html = get_the_post_thumbnail( $post_id, 'large', array( 'class' => 'wpa-featured-image-preview' ) );
 
@@ -442,15 +449,29 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 <option value=""><?php esc_html_e( 'Keine Zeit auswählen', 'wp-automation-editor' ); ?></option>
 
                                 <?php foreach ( $remote_publish_time_options as $time_value => $time_label ) : ?>
-                                    <?php $is_time_occupied = in_array( $time_value, $occupied_remote_publish_times, true ); ?>
+                                    <?php
+                                    $occupied_remote_publish_slot = isset( $occupied_remote_publish_slots_by_time[ $time_value ] )
+                                        ? $occupied_remote_publish_slots_by_time[ $time_value ]
+                                        : array();
+
+                                    $is_time_occupied = ! empty( $occupied_remote_publish_slot );
+                                    $occupied_post_title = isset( $occupied_remote_publish_slot['title'] )
+                                        ? $occupied_remote_publish_slot['title']
+                                        : '';
+
+                                    $time_option_label = $is_time_occupied && '' !== $occupied_post_title
+                                        ? sprintf( __( '%1$s – Belegt: %2$s', 'wp-automation-editor' ), $time_label, $occupied_post_title )
+                                        : $time_label;
+                                    ?>
 
                                     <option
                                         value="<?php echo esc_attr( $time_value ); ?>"
+                                        class="<?php echo esc_attr( $is_time_occupied ? 'wpa-remote-publish-time-option-occupied' : '' ); ?>"
+                                        data-occupied-title="<?php echo esc_attr( $occupied_post_title ); ?>"
                                         <?php selected( $remote_publish_time, $time_value ); ?>
                                         <?php disabled( $is_time_occupied ); ?>
-                                        <?php echo $is_time_occupied ? 'hidden' : ''; ?>
                                     >
-                                        <?php echo esc_html( $is_time_occupied ? sprintf( __( '%s – Bereits belegt', 'wp-automation-editor' ), $time_label ) : $time_label ); ?>
+                                        <?php echo esc_html( $time_option_label ); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

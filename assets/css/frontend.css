@@ -333,3 +333,18 @@
 	white-space: nowrap;
 	border: 0;
 }
+
+#wpa_remote_publish_time option.wpa-remote-publish-time-option-occupied,
+#wpa_remote_publish_time option:disabled {
+	color: #8c8f94;
+	background: #f0f0f1;
+	cursor: not-allowed;
+}
+
+#wpa_remote_publish_time option.wpa-remote-publish-time-option-occupied {
+	font-style: italic;
+}
+
+#wpa_remote_publish_time:has(option.wpa-remote-publish-time-option-occupied) {
+	border-color: #c3c4c7;
+}

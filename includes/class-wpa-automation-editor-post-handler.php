@@ -244,11 +244,19 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 }
             }
 
-            $occupied_times = WPA_Automation_Editor_Helpers::get_remote_publish_occupied_times( $remote_publish_date, $post_id );
+            $occupied_slots = WPA_Automation_Editor_Helpers::get_remote_publish_occupied_slots( $remote_publish_date, $post_id );
+            $occupied_times = array();
+
+            foreach ( $occupied_slots as $occupied_slot ) {
+                if ( isset( $occupied_slot['time'] ) ) {
+                    $occupied_times[] = $occupied_slot['time'];
+                }
+            }
 
             wp_send_json_success(
                 array(
                     'occupiedTimes' => $occupied_times,
+                    'occupiedSlots' => $occupied_slots,
                 )
             );
         }

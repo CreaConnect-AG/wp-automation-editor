@@ -195,7 +195,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
             return $remote_publish_date . 'T' . $remote_publish_time . ':00';
         }
 
-        public static function get_remote_publish_occupied_times( $remote_publish_date, $exclude_post_id = 0 ) {
+        public static function get_remote_publish_occupied_slots( $remote_publish_date, $exclude_post_id = 0 ) {
             $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
 
             if ( ! self::is_valid_remote_publish_date( $remote_publish_date ) ) {
@@ -228,14 +228,43 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
 
             $posts_query = new WP_Query( $query_args );
             $time_options = self::get_remote_publish_time_options();
-            $occupied_times = array();
+            $occupied_slots = array();
 
             foreach ( $posts_query->posts as $occupied_post_id ) {
                 $remote_publish_time = get_post_meta( $occupied_post_id, self::META_REMOTE_PUBLISH_GROUP_TIME, true );
                 $remote_publish_time = is_string( $remote_publish_time ) ? sanitize_text_field( $remote_publish_time ) : '';
 
-                if ( isset( $time_options[ $remote_publish_time ] ) ) {
-                    $occupied_times[] = $remote_publish_time;
+                if ( ! isset( $time_options[ $remote_publish_time ] ) ) {
+                    continue;
+                }
+
+                $post_title = get_the_title( $occupied_post_id );
+                $post_title = '' !== $post_title ? $post_title : __( 'Beitrag ohne Titel', 'wp-automation-editor' );
+
+                if ( ! isset( $occupied_slots[ $remote_publish_time ] ) ) {
+                    $occupied_slots[ $remote_publish_time ] = array(
+                        'time' => $remote_publish_time,
+                        'postId' => absint( $occupied_post_id ),
+                        'title' => html_entity_decode( $post_title, ENT_QUOTES, get_bloginfo( 'charset' ) ),
+                        'titles' => array(),
+                    );
+                }
+
+                $occupied_slots[ $remote_publish_time ]['titles'][] = html_entity_decode( $post_title, ENT_QUOTES, get_bloginfo( 'charset' ) );
+                $occupied_slots[ $remote_publish_time ]['titles'] = array_values( array_unique( $occupied_slots[ $remote_publish_time ]['titles'] ) );
+                $occupied_slots[ $remote_publish_time ]['title'] = implode( ', ', $occupied_slots[ $remote_publish_time ]['titles'] );
+            }
+
+            return array_values( $occupied_slots );
+        }
+
+        public static function get_remote_publish_occupied_times( $remote_publish_date, $exclude_post_id = 0 ) {
+            $occupied_slots = self::get_remote_publish_occupied_slots( $remote_publish_date, $exclude_post_id );
+            $occupied_times = array();
+
+            foreach ( $occupied_slots as $occupied_slot ) {
+                if ( isset( $occupied_slot['time'] ) ) {
+                    $occupied_times[] = $occupied_slot['time'];
                 }
             }
 

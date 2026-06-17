@@ -23,6 +23,9 @@ document.addEventListener('DOMContentLoaded', function () {
             getTimeOptions().forEach(function (optionElement) {
                 optionElement.disabled = false;
                 optionElement.hidden = false;
+                optionElement.classList.remove('wpa-remote-publish-time-option-occupied');
+                optionElement.removeAttribute('aria-disabled');
+                optionElement.removeAttribute('data-occupied-title');
 
                 if (optionElement.dataset.originalLabel) {
                     optionElement.textContent = optionElement.dataset.originalLabel;
@@ -38,22 +41,67 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        function applyOccupiedTimes(occupiedTimes) {
+        function buildOccupiedSlotsByTime(occupiedSlots, occupiedTimes) {
+            const occupiedSlotsByTime = {};
+
+            if (Array.isArray(occupiedSlots)) {
+                occupiedSlots.forEach(function (occupiedSlot) {
+                    if (!occupiedSlot || !occupiedSlot.time) {
+                        return;
+                    }
+
+                    occupiedSlotsByTime[occupiedSlot.time] = {
+                        time: occupiedSlot.time,
+                        title: occupiedSlot.title || ''
+                    };
+                });
+            }
+
+            if (Array.isArray(occupiedTimes)) {
+                occupiedTimes.forEach(function (occupiedTime) {
+                    if (!occupiedSlotsByTime[occupiedTime]) {
+                        occupiedSlotsByTime[occupiedTime] = {
+                            time: occupiedTime,
+                            title: ''
+                        };
+                    }
+                });
+            }
+
+            return occupiedSlotsByTime;
+        }
+
+        function applyOccupiedSlots(occupiedSlots, occupiedTimes) {
+            const occupiedSlotsByTime = buildOccupiedSlotsByTime(occupiedSlots, occupiedTimes);
             let availableTimesCount = 0;
 
             getTimeOptions().forEach(function (optionElement) {
                 if (!optionElement.dataset.originalLabel) {
-                    optionElement.dataset.originalLabel = optionElement.textContent.replace(' – ' + window.wpaAutomationEditor.remotePublishSlotTakenText, '');
+                    optionElement.dataset.originalLabel = optionElement.textContent
+                        .replace(' – ' + window.wpaAutomationEditor.remotePublishSlotTakenText, '')
+                        .replace(/ – Belegt: .+$/, '');
                 }
 
-                const isOccupied = occupiedTimes.indexOf(optionElement.value) !== -1;
+                const occupiedSlot = occupiedSlotsByTime[optionElement.value] || null;
+                const isOccupied = occupiedSlot !== null;
+                const occupiedPostTitle = isOccupied && occupiedSlot.title ? occupiedSlot.title : '';
 
                 optionElement.disabled = isOccupied;
-                optionElement.hidden = isOccupied;
+                optionElement.hidden = false;
+                optionElement.classList.toggle('wpa-remote-publish-time-option-occupied', isOccupied);
 
                 if (isOccupied) {
-                    optionElement.textContent = optionElement.dataset.originalLabel + ' – ' + window.wpaAutomationEditor.remotePublishSlotTakenText;
+                    optionElement.setAttribute('aria-disabled', 'true');
+                    optionElement.dataset.occupiedTitle = occupiedPostTitle;
+
+                    if (occupiedPostTitle) {
+                        optionElement.textContent = optionElement.dataset.originalLabel + ' – Belegt: ' + occupiedPostTitle;
+                    } else {
+                        optionElement.textContent = optionElement.dataset.originalLabel + ' – ' + window.wpaAutomationEditor.remotePublishSlotTakenText;
+                    }
                 } else {
+                    optionElement.removeAttribute('aria-disabled');
+                    optionElement.removeAttribute('data-occupied-title');
                     optionElement.textContent = optionElement.dataset.originalLabel;
                     availableTimesCount++;
                 }
@@ -113,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         return;
                     }
 
-                    applyOccupiedTimes(responseData.data.occupiedTimes || []);
+                    applyOccupiedSlots(responseData.data.occupiedSlots || [], responseData.data.occupiedTimes || []);
                 })
                 .catch(function () {
                     resetTimeOptions();
