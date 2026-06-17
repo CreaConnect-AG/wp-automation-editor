@@ -60,6 +60,37 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 ? absint( wp_unslash( $_POST['newsletter_id'] ) )
                 : '';
 
+            $remote_publish_date = isset( $_POST['remote_publish_date'] )
+                ? sanitize_text_field( wp_unslash( $_POST['remote_publish_date'] ) )
+                : '';
+
+            $remote_publish_time = isset( $_POST['remote_publish_time'] )
+                ? sanitize_text_field( wp_unslash( $_POST['remote_publish_time'] ) )
+                : '';
+
+            $has_remote_publish_date = '' !== $remote_publish_date;
+            $has_remote_publish_time = '' !== $remote_publish_time;
+            $has_remote_publish_schedule = $has_remote_publish_date || $has_remote_publish_time;
+
+            if ( '' !== $newsletter_id && $has_remote_publish_schedule ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_conflict', $redirect_url ) );
+                exit;
+            }
+
+            if ( '' === $newsletter_id && $has_remote_publish_schedule && ( ! $has_remote_publish_date || ! $has_remote_publish_time ) ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_incomplete', $redirect_url ) );
+                exit;
+            }
+
+            if ( '' === $newsletter_id && $has_remote_publish_schedule ) {
+                $remote_publish_datetime_string = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string( $remote_publish_date, $remote_publish_time );
+
+                if ( '' === $remote_publish_datetime_string ) {
+                    wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_invalid', $redirect_url ) );
+                    exit;
+                }
+            }
+
             $status_options = WPA_Automation_Editor_Helpers::get_workflow_status_options();
 
             if ( ! isset( $status_options[ $workflow_status ] ) ) {
@@ -140,6 +171,14 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
                 update_post_meta( $post_id, 'lead', $post_excerpt );
 
+            }
+
+            if ( '' !== $newsletter_id ) {
+                WPA_Automation_Editor_Helpers::clear_post_remote_publish_schedule( $post_id );
+            } elseif ( $has_remote_publish_date && $has_remote_publish_time ) {
+                WPA_Automation_Editor_Helpers::update_post_remote_publish_schedule( $post_id, $remote_publish_date, $remote_publish_time );
+            } else {
+                WPA_Automation_Editor_Helpers::clear_post_remote_publish_schedule( $post_id );
             }
 
             WPA_Automation_Editor_Helpers::update_post_workflow_status( $post_id, $workflow_status );

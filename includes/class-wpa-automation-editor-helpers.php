@@ -12,6 +12,11 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
         const META_FRONTEND_EDITED = '_wpa_frontend_edited';
         const META_LAST_EDITED_BY = '_wpa_last_edited_by';
         const META_LAST_EDITED_AT = '_wpa_last_edited_at';
+        const META_REMOTE_PUBLISH_GROUP = 'wpa_remote_publish';
+        const META_REMOTE_PUBLISH_DATE = 'wpa_remote_publish_date';
+        const META_REMOTE_PUBLISH_TIME = 'wpa_remote_publish_time';
+        const META_REMOTE_PUBLISH_GROUP_DATE = 'wpa_remote_publish_wpa_remote_publish_date';
+        const META_REMOTE_PUBLISH_GROUP_TIME = 'wpa_remote_publish_wpa_remote_publish_time';
         const DEFAULT_AUTHOR_LOGIN = 'wp-automation';
         const POSTS_PER_PAGE = 20;
 		const CLEANUP_CRON_HOOK = 'wpa_automation_editor_cleanup_old_unbearbeitet_posts';
@@ -63,6 +68,180 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
 				'fertig'         => __( 'Veröffentlichen', 'wp-automation-editor' ),
 			);
 		}
+
+        public static function get_remote_publish_time_options() {
+            return array(
+                '08:00' => __( '08:00 Uhr', 'wp-automation-editor' ),
+                '11:00' => __( '11:00 Uhr', 'wp-automation-editor' ),
+                '14:00' => __( '14:00 Uhr', 'wp-automation-editor' ),
+                '17:00' => __( '17:00 Uhr', 'wp-automation-editor' ),
+            );
+        }
+
+        public static function get_post_remote_publish_schedule( $post_id ) {
+            $remote_publish_date = '';
+            $remote_publish_time = '';
+
+            if ( function_exists( 'get_field' ) ) {
+                $remote_publish_group = get_field( self::META_REMOTE_PUBLISH_GROUP, $post_id, false );
+
+                if ( is_array( $remote_publish_group ) ) {
+                    if ( isset( $remote_publish_group[ self::META_REMOTE_PUBLISH_DATE ] ) ) {
+                        $remote_publish_date = $remote_publish_group[ self::META_REMOTE_PUBLISH_DATE ];
+                    }
+
+                    if ( isset( $remote_publish_group[ self::META_REMOTE_PUBLISH_TIME ] ) ) {
+                        $remote_publish_time = $remote_publish_group[ self::META_REMOTE_PUBLISH_TIME ];
+                    }
+                }
+            }
+
+            if ( '' === $remote_publish_date || null === $remote_publish_date || false === $remote_publish_date ) {
+                $remote_publish_date = get_post_meta( $post_id, self::META_REMOTE_PUBLISH_GROUP_DATE, true );
+            }
+
+            if ( '' === $remote_publish_time || null === $remote_publish_time || false === $remote_publish_time ) {
+                $remote_publish_time = get_post_meta( $post_id, self::META_REMOTE_PUBLISH_GROUP_TIME, true );
+            }
+
+            if ( '' === $remote_publish_date || null === $remote_publish_date || false === $remote_publish_date ) {
+                $remote_publish_date = get_post_meta( $post_id, self::META_REMOTE_PUBLISH_DATE, true );
+            }
+
+            if ( '' === $remote_publish_time || null === $remote_publish_time || false === $remote_publish_time ) {
+                $remote_publish_time = get_post_meta( $post_id, self::META_REMOTE_PUBLISH_TIME, true );
+            }
+
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+            $remote_publish_time = is_string( $remote_publish_time ) ? sanitize_text_field( $remote_publish_time ) : '';
+
+            return array(
+                'date' => $remote_publish_date,
+                'time' => $remote_publish_time,
+            );
+        }
+
+        public static function update_post_remote_publish_schedule( $post_id, $remote_publish_date, $remote_publish_time ) {
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+            $remote_publish_time = sanitize_text_field( $remote_publish_time );
+
+            $acf_remote_publish_date = self::normalize_remote_publish_date_for_acf( $remote_publish_date );
+
+            if ( function_exists( 'update_field' ) ) {
+                $remote_publish_group = get_field( self::META_REMOTE_PUBLISH_GROUP, $post_id, false );
+
+                if ( ! is_array( $remote_publish_group ) ) {
+                    $remote_publish_group = array();
+                }
+
+                $remote_publish_group[ self::META_REMOTE_PUBLISH_DATE ] = $acf_remote_publish_date;
+                $remote_publish_group[ self::META_REMOTE_PUBLISH_TIME ] = $remote_publish_time;
+
+                update_field( self::META_REMOTE_PUBLISH_GROUP, $remote_publish_group, $post_id );
+            }
+
+            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_GROUP_DATE, $acf_remote_publish_date );
+            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_GROUP_TIME, $remote_publish_time );
+
+            delete_post_meta( $post_id, self::META_REMOTE_PUBLISH_DATE );
+            delete_post_meta( $post_id, self::META_REMOTE_PUBLISH_TIME );
+        }
+
+        public static function clear_post_remote_publish_schedule( $post_id ) {
+            if ( function_exists( 'update_field' ) ) {
+                $remote_publish_group = get_field( self::META_REMOTE_PUBLISH_GROUP, $post_id, false );
+
+                if ( ! is_array( $remote_publish_group ) ) {
+                    $remote_publish_group = array();
+                }
+
+                $remote_publish_group[ self::META_REMOTE_PUBLISH_DATE ] = '';
+                $remote_publish_group[ self::META_REMOTE_PUBLISH_TIME ] = '';
+
+                update_field( self::META_REMOTE_PUBLISH_GROUP, $remote_publish_group, $post_id );
+            }
+
+            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_GROUP_DATE, '' );
+            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_GROUP_TIME, '' );
+
+            delete_post_meta( $post_id, self::META_REMOTE_PUBLISH_DATE );
+            delete_post_meta( $post_id, self::META_REMOTE_PUBLISH_TIME );
+        }
+
+        public static function is_valid_remote_publish_date( $remote_publish_date ) {
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+
+            if ( ! is_string( $remote_publish_date ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $remote_publish_date ) ) {
+                return false;
+            }
+
+            $date_parts = explode( '-', $remote_publish_date );
+
+            return checkdate( (int) $date_parts[1], (int) $date_parts[2], (int) $date_parts[0] );
+        }
+
+        public static function get_remote_publish_datetime_string( $remote_publish_date, $remote_publish_time ) {
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+            $time_options = self::get_remote_publish_time_options();
+
+            if ( ! self::is_valid_remote_publish_date( $remote_publish_date ) ) {
+                return '';
+            }
+
+            if ( ! isset( $time_options[ $remote_publish_time ] ) ) {
+                return '';
+            }
+
+            return $remote_publish_date . 'T' . $remote_publish_time . ':00';
+        }
+
+        private static function normalize_remote_publish_date_for_input( $remote_publish_date ) {
+            $remote_publish_date = is_string( $remote_publish_date ) ? trim( $remote_publish_date ) : '';
+
+            if ( '' === $remote_publish_date ) {
+                return '';
+            }
+
+            if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $remote_publish_date ) ) {
+                $date_parts = explode( '-', $remote_publish_date );
+
+                if ( checkdate( (int) $date_parts[1], (int) $date_parts[2], (int) $date_parts[0] ) ) {
+                    return $remote_publish_date;
+                }
+            }
+
+            if ( preg_match( '/^\d{8}$/', $remote_publish_date ) ) {
+                $year = substr( $remote_publish_date, 0, 4 );
+                $month = substr( $remote_publish_date, 4, 2 );
+                $day = substr( $remote_publish_date, 6, 2 );
+
+                if ( checkdate( (int) $month, (int) $day, (int) $year ) ) {
+                    return $year . '-' . $month . '-' . $day;
+                }
+            }
+
+            return '';
+        }
+
+        private static function normalize_remote_publish_date_for_acf( $remote_publish_date ) {
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+
+            if ( '' === $remote_publish_date ) {
+                return '';
+            }
+
+            return str_replace( '-', '', $remote_publish_date );
+        }
+
+        public static function clear_post_remote_publish_schedule( $post_id ) {
+            if ( function_exists( 'update_field' ) ) {
+                update_field( self::META_REMOTE_PUBLISH_DATE, '', $post_id );
+                update_field( self::META_REMOTE_PUBLISH_TIME, '', $post_id );
+            }
+
+            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_DATE, '' );
+            update_post_meta( $post_id, self::META_REMOTE_PUBLISH_TIME, '' );
+        }
 
         public static function get_date_filter_options() {
             return array(
@@ -353,6 +532,18 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
                 'trash_error' => array(
                     'message' => __( 'Der Beitrag konnte nicht in den Papierkorb verschoben werden.', 'wp-automation-editor' ),
                     'type'    => 'error',
+                ),
+                'schedule_conflict' => array(
+                    'message' => __( 'Bitte entweder eine Newsletter ID oder ein Veröffentlichungsdatum mit Uhrzeit setzen, nicht beides.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'schedule_incomplete' => array(
+                    'message' => __( 'Bitte Veröffentlichungsdatum und Veröffentlichungszeit gemeinsam ausfüllen.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'schedule_invalid' => array(
+                    'message' => __( 'Das Veröffentlichungsdatum oder die Veröffentlichungszeit ist ungültig.', 'wp-automation-editor' ),
+                    'type' => 'error',
                 ),
             );
 

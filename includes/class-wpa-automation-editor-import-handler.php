@@ -220,11 +220,33 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 
 			$image_status_message = $this->prepare_featured_image_status_after_post_import( $post_id );
 
+			$remote_status = isset( $remote_post_data['status'] ) ? $remote_post_data['status'] : 'draft';
+			$remote_publish_date = isset( $remote_post_data['date'] ) ? $remote_post_data['date'] : '';
+
+			if ( 'future' === $remote_status && '' !== $remote_publish_date ) {
+				$import_message = sprintf(
+					__( 'Beitrag wurde auf der Zielseite vorgeplant. Remote-ID: %d. Datum/Zeit: %s.', 'wp-automation-editor' ),
+					$remote_post_id,
+					$remote_publish_date
+				);
+			} elseif ( 'draft' === $remote_status && '' !== $remote_publish_date ) {
+				$import_message = sprintf(
+					__( 'Beitrag wurde als Entwurf auf der Zielseite importiert und Datum/Zeit wurde gesetzt. Remote-ID: %d. Datum/Zeit: %s.', 'wp-automation-editor' ),
+					$remote_post_id,
+					$remote_publish_date
+				);
+			} else {
+				$import_message = sprintf(
+					__( 'Beitrag wurde als Entwurf auf der Zielseite importiert. Remote-ID: %d.', 'wp-automation-editor' ),
+					$remote_post_id
+				);
+			}
+
 			return array(
 				'post_id'        => $post_id,
 				'remote_post_id' => $remote_post_id,
 				'remote_url'     => self::get_remote_post_url( $remote_post_id ),
-				'message'        => sprintf( __( 'Beitrag wurde als Entwurf auf der Zielseite importiert. Remote-ID: %d.', 'wp-automation-editor' ), $remote_post_id ) . ' ' . $image_status_message,
+				'message' => $import_message . ' ' . $image_status_message,
 			);
 		}
 
@@ -304,6 +326,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 
 		private function build_remote_post_data( $post_id, $remote_category_ids, $remote_tag_ids ) {
 			$post = get_post( $post_id );
+
 			$lead = $this->get_field_value( 'lead', $post_id );
 			$quelle = $this->get_field_value( 'quelle', $post_id );
 			$newsletter_id = $this->get_field_value( 'newsletter_id', $post_id );
@@ -312,19 +335,39 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 				$lead = $post->post_excerpt;
 			}
 
+			$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
+			$remote_publish_datetime_string = '';
+
+			if ( '' === (string) $newsletter_id ) {
+				$remote_publish_datetime_string = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string(
+					$remote_publish_schedule['date'],
+					$remote_publish_schedule['time']
+				);
+			}
+
+			$remote_post_status = 'draft';
+
+			if ( '' !== $remote_publish_datetime_string && has_post_thumbnail( $post_id ) ) {
+				$remote_post_status = 'future';
+			}
+
 			$remote_post_data = array(
-				'title'      => html_entity_decode( get_the_title( $post_id ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
-				'content'    => $post->post_content,
-				'excerpt'    => $lead,
-				'status'     => 'draft',
+				'title' => html_entity_decode( get_the_title( $post_id ), ENT_QUOTES, get_bloginfo( 'charset' ) ),
+				'content' => $post->post_content,
+				'excerpt' => $lead,
+				'status' => $remote_post_status,
 				'categories' => $remote_category_ids,
-				'tags'       => $remote_tag_ids,
-				'acf'        => array(
+				'tags' => $remote_tag_ids,
+				'acf' => array(
 					'field_5e4ce5116af11' => $lead,
 					'field_5e4ce60cd16db' => $quelle,
 					'field_67bc48a5835d3' => $post_id,
 				),
 			);
+
+			if ( '' !== $remote_publish_datetime_string ) {
+				$remote_post_data['date'] = $remote_publish_datetime_string;
+			}
 
 			if ( '' !== (string) $newsletter_id ) {
 				$remote_post_data['acf']['newsletter_id'] = $newsletter_id;

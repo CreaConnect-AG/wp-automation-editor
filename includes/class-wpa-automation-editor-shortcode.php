@@ -311,6 +311,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             }
 
             $newsletter_id = '' !== (string) $newsletter_id ? absint( $newsletter_id ) : '';
+            $remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
+            $remote_publish_date = $remote_publish_schedule['date'];
+            $remote_publish_time = $remote_publish_schedule['time'];
+            $remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
             $featured_image_html = get_the_post_thumbnail( $post_id, 'large', array( 'class' => 'wpa-featured-image-preview' ) );
 
             ob_start();
@@ -408,6 +412,39 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                             >
                             <p class="wpa-help-text">
                                 <?php esc_html_e( 'Hier die Newsletter-Nummer angeben, falls der Beitrag in den Newsletter kommen soll.', 'wp-automation-editor' ); ?>
+                            </p>
+                        </div>
+                        
+                        <div class="wpa-form-row">
+                            <label for="wpa_remote_publish_date"><?php esc_html_e( 'Remote-Veröffentlichungsdatum', 'wp-automation-editor' ); ?></label>
+
+                            <input
+                                type="date"
+                                id="wpa_remote_publish_date"
+                                name="remote_publish_date"
+                                value="<?php echo esc_attr( $remote_publish_date ); ?>"
+                            >
+
+                            <p class="wpa-help-text">
+                                <?php esc_html_e( 'Nur verwenden, wenn keine Newsletter ID gesetzt ist.', 'wp-automation-editor' ); ?>
+                            </p>
+                        </div>
+
+                        <div class="wpa-form-row">
+                            <label for="wpa_remote_publish_time"><?php esc_html_e( 'Remote-Veröffentlichungszeit', 'wp-automation-editor' ); ?></label>
+
+                            <select id="wpa_remote_publish_time" name="remote_publish_time">
+                                <option value=""><?php esc_html_e( 'Keine Zeit auswählen', 'wp-automation-editor' ); ?></option>
+
+                                <?php foreach ( $remote_publish_time_options as $time_value => $time_label ) : ?>
+                                    <option value="<?php echo esc_attr( $time_value ); ?>" <?php selected( $remote_publish_time, $time_value ); ?>>
+                                        <?php echo esc_html( $time_label ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+
+                            <p class="wpa-help-text">
+                                <?php esc_html_e( 'Erlaubte Zeiten: 08:00, 11:00, 14:00 oder 17:00 Uhr.', 'wp-automation-editor' ); ?>
                             </p>
                         </div>
                     </div>
