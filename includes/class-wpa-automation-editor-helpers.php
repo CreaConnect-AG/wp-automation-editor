@@ -196,6 +196,113 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
             return $remote_publish_date . 'T' . $remote_publish_time . ':00';
         }
 
+        public static function get_post_publish_information_for_notification( $post_id, $context = 'status' ) {
+            $newsletter_id = self::get_post_newsletter_id( $post_id );
+
+            if ( '' !== $newsletter_id ) {
+                if ( 'import' === $context ) {
+                    return sprintf(
+                        __( 'Der Beitrag wird mit dem immoNewsletter #%s veröffentlicht.', 'wp-automation-editor' ),
+                        $newsletter_id
+                    );
+                }
+
+                return sprintf(
+                    __( 'immoNewsletter #%s', 'wp-automation-editor' ),
+                    $newsletter_id
+                );
+            }
+
+            $remote_publish_schedule = self::get_post_remote_publish_schedule( $post_id );
+            $remote_publish_date = self::format_remote_publish_date_for_notification( $remote_publish_schedule['date'] );
+            $remote_publish_time = self::format_remote_publish_time_for_notification( $remote_publish_schedule['time'] );
+
+            if ( '' === $remote_publish_date || '' === $remote_publish_time ) {
+                return '';
+            }
+
+            if ( 'import' === $context ) {
+                if ( has_post_thumbnail( $post_id ) ) {
+                    return sprintf(
+                        __( 'Der Beitrag ist für den %1$s um %2$s vorgeplant auf immo-invest.ch.', 'wp-automation-editor' ),
+                        $remote_publish_date,
+                        $remote_publish_time
+                    );
+                }
+
+                return sprintf(
+                    __( "HANDLUNGSBEDARF:\nDas Beitragsbild fehlt, der Beitrag soll am %1$s um %2$s vorgeplant werden auf immo-invest.ch.", 'wp-automation-editor' ),
+                    $remote_publish_date,
+                    $remote_publish_time
+                );
+            }
+
+            return sprintf(
+                __( '%1$s um %2$s', 'wp-automation-editor' ),
+                $remote_publish_date,
+                $remote_publish_time
+            );
+        }
+
+        public static function get_post_newsletter_id( $post_id ) {
+            $newsletter_id = '';
+
+            if ( function_exists( 'get_field' ) ) {
+                $newsletter_id = get_field( 'newsletter_id', $post_id );
+            }
+
+            if ( '' === $newsletter_id || null === $newsletter_id || false === $newsletter_id ) {
+                $newsletter_id = get_post_meta( $post_id, 'newsletter_id', true );
+            }
+
+            if ( is_array( $newsletter_id ) || is_object( $newsletter_id ) ) {
+                return '';
+            }
+
+            $newsletter_id = absint( $newsletter_id );
+
+            return $newsletter_id > 0 ? (string) $newsletter_id : '';
+        }
+
+        private static function format_remote_publish_date_for_notification( $remote_publish_date ) {
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+
+            if ( '' === $remote_publish_date ) {
+                return '';
+            }
+
+            if ( function_exists( 'wp_date' ) && function_exists( 'wp_timezone' ) ) {
+                $date = DateTimeImmutable::createFromFormat( '!Y-m-d', $remote_publish_date, wp_timezone() );
+
+                if ( $date instanceof DateTimeImmutable ) {
+                    return wp_date( get_option( 'date_format' ), $date->getTimestamp(), wp_timezone() );
+                }
+            }
+
+            $timestamp = strtotime( $remote_publish_date . ' 00:00:00' );
+
+            if ( false === $timestamp ) {
+                return $remote_publish_date;
+            }
+
+            return date_i18n( get_option( 'date_format' ), $timestamp );
+        }
+
+        private static function format_remote_publish_time_for_notification( $remote_publish_time ) {
+            $remote_publish_time = is_string( $remote_publish_time ) ? sanitize_text_field( $remote_publish_time ) : '';
+            $time_options = self::get_remote_publish_time_options();
+
+            if ( isset( $time_options[ $remote_publish_time ] ) ) {
+                return wp_strip_all_tags( $time_options[ $remote_publish_time ] );
+            }
+
+            if ( preg_match( '/^\d{2}:\d{2}$/', $remote_publish_time ) ) {
+                return $remote_publish_time . ' Uhr';
+            }
+
+            return '';
+        }
+
         public static function get_remote_publish_occupied_slots( $remote_publish_date, $exclude_post_id = 0 ) {
             $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
 

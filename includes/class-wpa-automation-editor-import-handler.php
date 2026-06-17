@@ -890,6 +890,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 				$midjourney_prompt_en = sanitize_textarea_field( (string) $midjourney_prompt_en );
 			}
 
+			$publish_information = WPA_Automation_Editor_Helpers::get_post_publish_information_for_notification( $post_id, 'import' );
+
 			$payload = array(
 				'notification_type'           => 'remote_import',
 				'import_successful'           => (bool) $import_successful,
@@ -903,6 +905,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 				'remote_post_id'              => $remote_post_id,
 				'remote_url'                  => $remote_url,
 				'message'                     => $message,
+				'publish_information' 		  => $publish_information,
 				'status_code'                 => $status_code,
 				'stop_queue'                  => $stop_queue,
 				'has_featured_image'          => $has_featured_image,

@@ -402,6 +402,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 $midjourney_prompt_en = sanitize_textarea_field( (string) $midjourney_prompt_en );
             }
 
+            $publish_information = WPA_Automation_Editor_Helpers::get_post_publish_information_for_notification( $post_id, 'status' );
+
             $payload = array(
                 'title'                     => get_the_title( $post_id ),
                 'post_id'                   => $post_id,
@@ -413,7 +415,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 'old_workflow_status_label' => isset( $status_options[ $old_workflow_status ] ) ? $status_options[ $old_workflow_status ] : $old_workflow_status,
                 'workflow_status'           => $new_workflow_status,
                 'workflow_status_label'     => isset( $status_options[ $new_workflow_status ] ) ? $status_options[ $new_workflow_status ] : $new_workflow_status,
-
+                'publish_information'       => $publish_information,
                 'has_featured_image'        => $has_featured_image,
                 'featured_image_status'     => $has_featured_image ? 'set' : 'missing',
                 'midjourney_prompt_en'      => $midjourney_prompt_en,
