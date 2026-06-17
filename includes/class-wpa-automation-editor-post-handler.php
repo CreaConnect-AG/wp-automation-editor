@@ -123,13 +123,23 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             wp_set_post_tags( $post_id, $tag_names, false );
 
             if ( function_exists( 'update_field' ) ) {
+
                 update_field( 'newsletter_id', $newsletter_id, $post_id );
+                update_field( 'lead', $post_excerpt, $post_id );
+
             } else {
+
                 if ( '' === $newsletter_id ) {
+
                     delete_post_meta( $post_id, 'newsletter_id' );
                 } else {
+
                     update_post_meta( $post_id, 'newsletter_id', $newsletter_id );
+
                 }
+
+                update_post_meta( $post_id, 'lead', $post_excerpt );
+
             }
 
             WPA_Automation_Editor_Helpers::update_post_workflow_status( $post_id, $workflow_status );
