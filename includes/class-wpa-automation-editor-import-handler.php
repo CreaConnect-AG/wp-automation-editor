@@ -835,13 +835,29 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			$webhook_url = self::get_import_teams_webhook_url();
 
 			if ( empty( $webhook_url ) || 'https://YOUR-IMPORT-WEBHOOK-URL-HERE' === $webhook_url ) {
-				return;
+				$this->log_message( 'Import Teams notification skipped for local post ' . absint( $post_id ) . ': webhook URL is missing or still placeholder.' );
+				return new WP_Error(
+					'wpa_import_teams_webhook_missing',
+					__( 'Die Import Teams Webhook URL fehlt.', 'wp-automation-editor' )
+				);
+			}
+
+			if ( false === filter_var( $webhook_url, FILTER_VALIDATE_URL ) ) {
+				$this->log_message( 'Import Teams notification skipped for local post ' . absint( $post_id ) . ': webhook URL is invalid.' );
+				return new WP_Error(
+					'wpa_import_teams_webhook_invalid',
+					__( 'Die Import Teams Webhook URL ist ungültig.', 'wp-automation-editor' )
+				);
 			}
 
 			$post = get_post( $post_id );
 
 			if ( ! $post instanceof WP_Post ) {
-				return;
+				$this->log_message( 'Import Teams notification skipped: post not found. Local post ID: ' . absint( $post_id ) );
+				return new WP_Error(
+					'wpa_import_teams_post_missing',
+					__( 'Der Beitrag für die Teams-Benachrichtigung wurde nicht gefunden.', 'wp-automation-editor' )
+				);
 			}
 
 			$current_user = wp_get_current_user();
@@ -902,50 +918,82 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			$publish_information = WPA_Automation_Editor_Helpers::get_post_publish_information_for_notification( $post_id, 'import' );
 
 			$payload = array(
-				'notification_type'           => 'remote_import',
-				'import_successful'           => (bool) $import_successful,
-				'import_status'               => $import_successful ? 'successful' : 'failed',
-				'title'                       => get_the_title( $post_id ),
-				'post_id'                     => $post_id,
-				'post_url'                    => get_permalink( $post_id ),
-				'edit_url'                    => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
-				'author'                      => $current_user && $current_user->exists() ? $current_user->display_name : '',
-				'imported_at'                 => current_time( 'mysql' ),
-				'remote_post_id'              => $remote_post_id,
-				'remote_url'                  => $remote_url,
-				'message'                     => $message,
-				'publish_information' 		  => $publish_information,
-				'status_code'                 => $status_code,
-				'stop_queue'                  => $stop_queue,
-				'has_featured_image'          => $has_featured_image,
-				'featured_image_status'       => $featured_image_status,
-				'featured_image_status_label' => $featured_image_status_label,
-				'remote_media_status'         => $remote_media_status,
-				'remote_media_error'          => $remote_media_error,
-				'midjourney_prompt_en'        => $midjourney_prompt_en,
+				'notification_type' => 'remote_import',
+				'import_successful' => (bool) $import_successful,
+				'import_status' => $import_successful ? 'successful' : 'failed',
+				'title' => get_the_title( $post_id ),
+				'post_id' => absint( $post_id ),
+				'post_url' => get_permalink( $post_id ),
+				'edit_url' => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
+				'author' => $current_user && $current_user->exists() ? $current_user->display_name : '',
+				'imported_at' => current_time( 'mysql' ),
+				'remote_post_id' => absint( $remote_post_id ),
+				'remote_url' => (string) $remote_url,
+				'message' => (string) $message,
+				'publish_information' => (string) $publish_information,
+				'status_code' => absint( $status_code ),
+				'stop_queue' => (bool) $stop_queue,
+				'has_featured_image' => (bool) $has_featured_image,
+				'featured_image_status' => (string) $featured_image_status,
+				'featured_image_status_label' => (string) $featured_image_status_label,
+				'remote_media_status' => (string) $remote_media_status,
+				'remote_media_error' => (string) $remote_media_error,
+				'midjourney_prompt_en' => (string) $midjourney_prompt_en,
 			);
+
+			$payload_json = wp_json_encode( $payload, JSON_UNESCAPED_UNICODE );
+
+			if ( false === $payload_json ) {
+				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ': JSON payload could not be encoded.' );
+				return new WP_Error(
+					'wpa_import_teams_json_failed',
+					__( 'Die Teams-Payload konnte nicht als JSON erstellt werden.', 'wp-automation-editor' )
+				);
+			}
 
 			$response = wp_remote_post(
 				$webhook_url,
 				array(
-					'timeout' => 10,
+					'timeout' => 15,
+					'redirection' => 3,
 					'headers' => array(
 						'Content-Type' => 'application/json',
+						'Accept' => 'application/json',
 					),
-					'body'    => wp_json_encode( $payload ),
+					'body' => $payload_json,
 				)
 			);
 
 			if ( is_wp_error( $response ) ) {
 				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ': ' . $response->get_error_message() );
-				return;
+				return $response;
 			}
 
-			$response_code = wp_remote_retrieve_response_code( $response );
+			$response_code = (int) wp_remote_retrieve_response_code( $response );
+			$response_body = (string) wp_remote_retrieve_body( $response );
 
 			if ( 200 > $response_code || 299 < $response_code ) {
-				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ' with HTTP status: ' . $response_code );
+				$this->log_message(
+					'Import Teams notification failed for local post ' . absint( $post_id ) .
+					' with HTTP status: ' . $response_code .
+					'. Response body: ' . wp_strip_all_tags( $response_body )
+				);
+
+				return new WP_Error(
+					'wpa_import_teams_http_failed',
+					sprintf(
+						__( 'Teams-Benachrichtigung fehlgeschlagen. HTTP-Code: %d', 'wp-automation-editor' ),
+						$response_code
+					)
+				);
 			}
+
+			$this->log_message(
+				'Import Teams notification sent for local post ' . absint( $post_id ) .
+				' with HTTP status: ' . $response_code
+			);
+
+			return true;
 		}
 
 		private function log_message( $message ) {
