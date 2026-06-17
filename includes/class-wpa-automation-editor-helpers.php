@@ -195,6 +195,102 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
             return $remote_publish_date . 'T' . $remote_publish_time . ':00';
         }
 
+        public static function get_remote_publish_occupied_times( $remote_publish_date, $exclude_post_id = 0 ) {
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+
+            if ( ! self::is_valid_remote_publish_date( $remote_publish_date ) ) {
+                return array();
+            }
+
+            $acf_remote_publish_date = self::normalize_remote_publish_date_for_acf( $remote_publish_date );
+            $exclude_post_id = absint( $exclude_post_id );
+
+            $query_args = array(
+                'post_type' => 'post',
+                'post_status' => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+                'fields' => 'ids',
+                'posts_per_page' => -1,
+                'no_found_rows' => true,
+                'ignore_sticky_posts' => true,
+                'update_post_term_cache' => false,
+                'meta_query' => array(
+                    array(
+                        'key' => self::META_REMOTE_PUBLISH_GROUP_DATE,
+                        'value' => $acf_remote_publish_date,
+                        'compare' => '=',
+                    ),
+                ),
+            );
+
+            if ( $exclude_post_id > 0 ) {
+                $query_args['post__not_in'] = array( $exclude_post_id );
+            }
+
+            $posts_query = new WP_Query( $query_args );
+            $time_options = self::get_remote_publish_time_options();
+            $occupied_times = array();
+
+            foreach ( $posts_query->posts as $occupied_post_id ) {
+                $remote_publish_time = get_post_meta( $occupied_post_id, self::META_REMOTE_PUBLISH_GROUP_TIME, true );
+                $remote_publish_time = is_string( $remote_publish_time ) ? sanitize_text_field( $remote_publish_time ) : '';
+
+                if ( isset( $time_options[ $remote_publish_time ] ) ) {
+                    $occupied_times[] = $remote_publish_time;
+                }
+            }
+
+            return array_values( array_unique( $occupied_times ) );
+        }
+
+        public static function is_remote_publish_slot_taken( $remote_publish_date, $remote_publish_time, $exclude_post_id = 0 ) {
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+            $remote_publish_time = sanitize_text_field( $remote_publish_time );
+            $time_options = self::get_remote_publish_time_options();
+
+            if ( ! self::is_valid_remote_publish_date( $remote_publish_date ) ) {
+                return false;
+            }
+
+            if ( ! isset( $time_options[ $remote_publish_time ] ) ) {
+                return false;
+            }
+
+            $acf_remote_publish_date = self::normalize_remote_publish_date_for_acf( $remote_publish_date );
+            $exclude_post_id = absint( $exclude_post_id );
+
+            $query_args = array(
+                'post_type' => 'post',
+                'post_status' => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+                'fields' => 'ids',
+                'posts_per_page' => 1,
+                'no_found_rows' => true,
+                'ignore_sticky_posts' => true,
+                'update_post_meta_cache' => false,
+                'update_post_term_cache' => false,
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array(
+                        'key' => self::META_REMOTE_PUBLISH_GROUP_DATE,
+                        'value' => $acf_remote_publish_date,
+                        'compare' => '=',
+                    ),
+                    array(
+                        'key' => self::META_REMOTE_PUBLISH_GROUP_TIME,
+                        'value' => $remote_publish_time,
+                        'compare' => '=',
+                    ),
+                ),
+            );
+
+            if ( $exclude_post_id > 0 ) {
+                $query_args['post__not_in'] = array( $exclude_post_id );
+            }
+
+            $posts_query = new WP_Query( $query_args );
+
+            return ! empty( $posts_query->posts );
+        }
+
         private static function normalize_remote_publish_date_for_input( $remote_publish_date ) {
             $remote_publish_date = is_string( $remote_publish_date ) ? trim( $remote_publish_date ) : '';
 
@@ -533,6 +629,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
                 ),
                 'schedule_invalid' => array(
                     'message' => __( 'Das Veröffentlichungsdatum oder die Veröffentlichungszeit ist ungültig.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'schedule_slot_taken' => array(
+                    'message' => __( 'Dieses Veröffentlichungsdatum mit dieser Uhrzeit ist bereits durch einen anderen Beitrag belegt.', 'wp-automation-editor' ),
                     'type' => 'error',
                 ),
             );

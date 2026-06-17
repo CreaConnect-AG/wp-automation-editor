@@ -315,6 +315,11 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             $remote_publish_date = $remote_publish_schedule['date'];
             $remote_publish_time = $remote_publish_schedule['time'];
             $remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
+            $occupied_remote_publish_times = array();
+
+            if ( '' !== $remote_publish_date ) {
+                $occupied_remote_publish_times = WPA_Automation_Editor_Helpers::get_remote_publish_occupied_times( $remote_publish_date, $post_id );
+            }
             $featured_image_html = get_the_post_thumbnail( $post_id, 'large', array( 'class' => 'wpa-featured-image-preview' ) );
 
             ob_start();
@@ -437,8 +442,15 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 <option value=""><?php esc_html_e( 'Keine Zeit auswählen', 'wp-automation-editor' ); ?></option>
 
                                 <?php foreach ( $remote_publish_time_options as $time_value => $time_label ) : ?>
-                                    <option value="<?php echo esc_attr( $time_value ); ?>" <?php selected( $remote_publish_time, $time_value ); ?>>
-                                        <?php echo esc_html( $time_label ); ?>
+                                    <?php $is_time_occupied = in_array( $time_value, $occupied_remote_publish_times, true ); ?>
+
+                                    <option
+                                        value="<?php echo esc_attr( $time_value ); ?>"
+                                        <?php selected( $remote_publish_time, $time_value ); ?>
+                                        <?php disabled( $is_time_occupied ); ?>
+                                        <?php echo $is_time_occupied ? 'hidden' : ''; ?>
+                                    >
+                                        <?php echo esc_html( $is_time_occupied ? sprintf( __( '%s – Bereits belegt', 'wp-automation-editor' ), $time_label ) : $time_label ); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

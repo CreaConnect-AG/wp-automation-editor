@@ -91,6 +91,13 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 }
             }
 
+            if ( '' === $newsletter_id && $has_remote_publish_date && $has_remote_publish_time ) {
+                if ( WPA_Automation_Editor_Helpers::is_remote_publish_slot_taken( $remote_publish_date, $remote_publish_time, $post_id ) ) {
+                    wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_slot_taken', $redirect_url ) );
+                    exit;
+                }
+            }
+
             $status_options = WPA_Automation_Editor_Helpers::get_workflow_status_options();
 
             if ( ! isset( $status_options[ $workflow_status ] ) ) {
@@ -195,6 +202,55 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
             wp_safe_redirect( add_query_arg( 'wpa_notice', 'saved', $redirect_url ) );
             exit;
+        }
+
+        public function handle_get_remote_publish_occupied_times() {
+            if ( ! is_user_logged_in() ) {
+                wp_send_json_error(
+                    array(
+                        'message' => __( 'Bitte zuerst einloggen.', 'wp-automation-editor' ),
+                    ),
+                    401
+                );
+            }
+
+            check_ajax_referer( 'wpa_remote_publish_slots', 'nonce' );
+
+            $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+            $remote_publish_date = isset( $_POST['remote_publish_date'] )
+                ? sanitize_text_field( wp_unslash( $_POST['remote_publish_date'] ) )
+                : '';
+
+            if ( $post_id > 0 ) {
+                $post = get_post( $post_id );
+                $author_id = WPA_Automation_Editor_Helpers::get_automation_author_id();
+
+                if ( ! $post instanceof WP_Post || 'post' !== $post->post_type || ! $author_id || (int) $post->post_author !== (int) $author_id ) {
+                    wp_send_json_error(
+                        array(
+                            'message' => __( 'Der Beitrag konnte nicht geladen werden.', 'wp-automation-editor' ),
+                        ),
+                        404
+                    );
+                }
+
+                if ( ! current_user_can( 'edit_post', $post_id ) ) {
+                    wp_send_json_error(
+                        array(
+                            'message' => __( 'Du hast keine Berechtigung für diese Aktion.', 'wp-automation-editor' ),
+                        ),
+                        403
+                    );
+                }
+            }
+
+            $occupied_times = WPA_Automation_Editor_Helpers::get_remote_publish_occupied_times( $remote_publish_date, $post_id );
+
+            wp_send_json_success(
+                array(
+                    'occupiedTimes' => $occupied_times,
+                )
+            );
         }
 
         private function handle_featured_image_upload( $post_id ) {

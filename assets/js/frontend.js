@@ -3,6 +3,131 @@ document.addEventListener('DOMContentLoaded', function () {
     const tagSelectField = document.querySelector('.wpa-tags-select');
     const editForm = document.querySelector('.wpa-edit-form');
 
+    function initRemotePublishSlots() {
+        const remotePublishDateField = document.querySelector('#wpa_remote_publish_date');
+        const remotePublishTimeField = document.querySelector('#wpa_remote_publish_time');
+
+        if (!editForm || !remotePublishDateField || !remotePublishTimeField || !window.wpaAutomationEditor) {
+            return;
+        }
+
+        let currentRequestId = 0;
+
+        function getTimeOptions() {
+            return Array.from(remotePublishTimeField.querySelectorAll('option')).filter(function (optionElement) {
+                return optionElement.value !== '';
+            });
+        }
+
+        function resetTimeOptions() {
+            getTimeOptions().forEach(function (optionElement) {
+                optionElement.disabled = false;
+                optionElement.hidden = false;
+
+                if (optionElement.dataset.originalLabel) {
+                    optionElement.textContent = optionElement.dataset.originalLabel;
+                }
+            });
+        }
+
+        function removeSlotMessage() {
+            const messageElement = document.querySelector('.wpa-remote-publish-slot-message');
+
+            if (messageElement) {
+                messageElement.remove();
+            }
+        }
+
+        function applyOccupiedTimes(occupiedTimes) {
+            let availableTimesCount = 0;
+
+            getTimeOptions().forEach(function (optionElement) {
+                if (!optionElement.dataset.originalLabel) {
+                    optionElement.dataset.originalLabel = optionElement.textContent.replace(' – ' + window.wpaAutomationEditor.remotePublishSlotTakenText, '');
+                }
+
+                const isOccupied = occupiedTimes.indexOf(optionElement.value) !== -1;
+
+                optionElement.disabled = isOccupied;
+                optionElement.hidden = isOccupied;
+
+                if (isOccupied) {
+                    optionElement.textContent = optionElement.dataset.originalLabel + ' – ' + window.wpaAutomationEditor.remotePublishSlotTakenText;
+                } else {
+                    optionElement.textContent = optionElement.dataset.originalLabel;
+                    availableTimesCount++;
+                }
+            });
+
+            if (remotePublishTimeField.selectedOptions.length && remotePublishTimeField.selectedOptions[0].disabled) {
+                remotePublishTimeField.value = '';
+            }
+
+            removeSlotMessage();
+
+            if (availableTimesCount === 0 && remotePublishDateField.value !== '') {
+                const messageElement = document.createElement('p');
+                messageElement.className = 'wpa-help-text wpa-remote-publish-slot-message';
+                messageElement.textContent = window.wpaAutomationEditor.remotePublishAllSlotsTakenText;
+                remotePublishTimeField.parentNode.appendChild(messageElement);
+            }
+        }
+
+        function fetchOccupiedTimes() {
+            const remotePublishDate = remotePublishDateField.value;
+
+            resetTimeOptions();
+            removeSlotMessage();
+
+            if (!remotePublishDate) {
+                return;
+            }
+
+            currentRequestId++;
+
+            const requestId = currentRequestId;
+            const requestBody = new URLSearchParams();
+
+            requestBody.append('action', 'wpa_get_remote_publish_occupied_times');
+            requestBody.append('nonce', window.wpaAutomationEditor.remotePublishSlotsNonce);
+            requestBody.append('post_id', String(window.wpaAutomationEditor.currentEditPostId || 0));
+            requestBody.append('remote_publish_date', remotePublishDate);
+
+            fetch(window.wpaAutomationEditor.ajaxUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+                body: requestBody.toString()
+            })
+                .then(function (response) {
+                    return response.json();
+                })
+                .then(function (responseData) {
+                    if (requestId !== currentRequestId) {
+                        return;
+                    }
+
+                    if (!responseData || responseData.success !== true || !responseData.data) {
+                        return;
+                    }
+
+                    applyOccupiedTimes(responseData.data.occupiedTimes || []);
+                })
+                .catch(function () {
+                    resetTimeOptions();
+                    removeSlotMessage();
+                });
+        }
+
+        remotePublishDateField.addEventListener('change', fetchOccupiedTimes);
+
+        fetchOccupiedTimes();
+    }
+
+    initRemotePublishSlots();
+
     if (categorySelectField && typeof TomSelect !== 'undefined') {
         new TomSelect(categorySelectField, {
             plugins: {

@@ -46,12 +46,15 @@ if ( ! class_exists( 'WPA_Automation_Editor_Assets' ) ) {
                 'wpaAutomationEditor',
                 array(
                     'categoryPlaceholder' => __( 'Kategorien suchen oder auswählen', 'wp-automation-editor' ),
-                    'tagPlaceholder'      => __( 'Schlagwörter suchen oder neu eingeben', 'wp-automation-editor' ),
-                    'ajaxUrl'             => admin_url( 'admin-ajax.php' ),
-                    'lockRefreshNonce'    => wp_create_nonce( 'wpa_refresh_post_lock' ),
+                    'tagPlaceholder' => __( 'Schlagwörter suchen oder neu eingeben', 'wp-automation-editor' ),
+                    'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+                    'lockRefreshNonce' => wp_create_nonce( 'wpa_refresh_post_lock' ),
+                    'remotePublishSlotsNonce' => wp_create_nonce( 'wpa_remote_publish_slots' ),
+                    'remotePublishSlotTakenText' => __( 'Bereits belegt', 'wp-automation-editor' ),
+                    'remotePublishAllSlotsTakenText' => __( 'An diesem Datum sind alle Zeiten bereits belegt.', 'wp-automation-editor' ),
                     'lockRefreshInterval' => 60000,
-                    'currentEditPostId'   => WPA_Automation_Editor_Helpers::get_current_edit_post_id(),
-                    'lockLostMessage'     => __( 'Dieser Beitrag ist nicht mehr für dich freigegeben. Bitte lade die Seite neu.', 'wp-automation-editor' ),
+                    'currentEditPostId' => WPA_Automation_Editor_Helpers::get_current_edit_post_id(),
+                    'lockLostMessage' => __( 'Dieser Beitrag ist nicht mehr für dich freigegeben. Bitte lade die Seite neu.', 'wp-automation-editor' ),
                 )
             );
 
