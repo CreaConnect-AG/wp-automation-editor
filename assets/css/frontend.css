@@ -3,11 +3,7 @@
 }
 
 .wpa-card {
-    background: #ffffff;
-    border: 1px solid #dcdcde;
-    padding: 24px;
     margin-bottom: 24px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .wpa-card-header {
@@ -51,9 +47,10 @@
 .wpa-filter-form input[type="text"],
 .wpa-edit-form input[type="text"],
 .wpa-edit-form textarea,
-.wpa-edit-form select {
+.wpa-edit-form select,
+input#wpa_newsletter_id {
     width: 100%;
-    border: 1px solid #8c8f94;
+    border: 1px solid #c3c4c7;
     padding: 12px 14px;
     min-height: 46px;
     box-sizing: border-box;
@@ -65,15 +62,14 @@
 }
 
 .wpa-editor-box {
-    border: 1px solid #dcdcde;
     overflow: hidden;
     background: #fff;
 }
 
-.wpa-help-text {
+p.wpa-help-text {
     margin: 8px 0 0;
-    color: #646970;
-    font-size: 14px;
+    font-size: small !important;
+    color: #c3c4c7;
 }
 
 .wpa-filter-actions,
@@ -218,7 +214,7 @@
 
 .wpa-back-link {
     display: inline-block;
-    margin-bottom: 10px;
+    margin-bottom: 50px;
     text-decoration: none;
     font-weight: 600;
 }
@@ -347,4 +343,104 @@
 
 #wpa_remote_publish_time:has(option.wpa-remote-publish-time-option-occupied) {
 	border-color: #c3c4c7;
+}
+
+td.actions a, td.actions button {
+    padding: 0;
+}
+
+td.actions {
+    padding: 15px 0px;
+}
+
+.wpa-featured-image-upload {
+    margin-top: 15px;
+}
+
+input#wpa_remote_publish_date {
+    width: 100%;
+    border: 1px solid #c3c4c7;
+    padding: 12px 14px;
+    min-height: 42px;
+    box-sizing: border-box;
+    background: #fff;
+    max-height: 50px;
+}
+
+.wpa-form-section {
+	border-bottom: 1px solid #dcdcde;
+	background: #ffffff;
+    padding-bottom: 50px;
+	margin-bottom: 50px;
+}
+
+.wpa-form-section h3 {
+	margin: 0 0 18px;
+	font-size: 20px;
+	line-height: 1.3;
+    color: #00939e;
+}
+
+.wpa-radio-group {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+	margin-bottom: 20px;
+}
+
+.wpa-radio-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	border: 1px solid #dcdcde;
+	background: #f6f7f7;
+	padding: 14px;
+	cursor: pointer;
+}
+
+.wpa-radio-card:has(input:checked) {
+	border-color: #00939e;
+	background: #e9fbfd;
+}
+
+.wpa-radio-card input {
+	margin-top: 3px;
+}
+
+.wpa-radio-card strong {
+	display: block;
+	margin-bottom: 4px;
+}
+
+.wpa-radio-card small {
+	display: block;
+	color: #646970;
+	font-weight: 400;
+	line-height: 1.4;
+}
+
+.wpa-publish-type-panel[hidden] {
+	display: none;
+}
+
+@media (max-width: 900px) {
+	.wpa-radio-group {
+		grid-template-columns: 1fr;
+	}
+}
+
+.wpa-radio-card {
+	position: relative;
+	cursor: pointer;
+}
+
+.wpa-radio-card input[type="radio"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.wpa-radio-card:has(input[type="radio"]:checked) {
+	border-color: #00939e;
+	background: #e9fbfd;
 }

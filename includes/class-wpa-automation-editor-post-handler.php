@@ -56,15 +56,23 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
             $workflow_status = isset( $_POST['workflow_status'] ) ? sanitize_key( wp_unslash( $_POST['workflow_status'] ) ) : 'unbearbeitet';
 
-            $newsletter_id = isset( $_POST['newsletter_id'] ) && '' !== wp_unslash( $_POST['newsletter_id'] )
+            $remote_publish_type = isset( $_POST['remote_publish_type'] )
+                ? sanitize_key( wp_unslash( $_POST['remote_publish_type'] ) )
+                : 'newsletter';
+
+            if ( ! in_array( $remote_publish_type, array( 'newsletter', 'immonews' ), true ) ) {
+                $remote_publish_type = 'newsletter';
+            }
+
+            $newsletter_id = 'newsletter' === $remote_publish_type && isset( $_POST['newsletter_id'] ) && '' !== wp_unslash( $_POST['newsletter_id'] )
                 ? absint( wp_unslash( $_POST['newsletter_id'] ) )
                 : '';
 
-            $remote_publish_date = isset( $_POST['remote_publish_date'] )
+            $remote_publish_date = 'immonews' === $remote_publish_type && isset( $_POST['remote_publish_date'] )
                 ? sanitize_text_field( wp_unslash( $_POST['remote_publish_date'] ) )
                 : '';
 
-            $remote_publish_time = isset( $_POST['remote_publish_time'] )
+            $remote_publish_time = 'immonews' === $remote_publish_type && isset( $_POST['remote_publish_time'] )
                 ? sanitize_text_field( wp_unslash( $_POST['remote_publish_time'] ) )
                 : '';
 

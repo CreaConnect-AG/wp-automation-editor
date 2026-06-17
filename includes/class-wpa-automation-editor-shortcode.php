@@ -315,6 +315,11 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             $remote_publish_date = $remote_publish_schedule['date'];
             $remote_publish_time = $remote_publish_schedule['time'];
             $remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
+            $remote_publish_type = 'newsletter';
+
+            if ( '' === (string) $newsletter_id && ( '' !== $remote_publish_date || '' !== $remote_publish_time ) ) {
+                $remote_publish_type = 'immonews';
+            }
             $occupied_remote_publish_slots = array();
             $occupied_remote_publish_slots_by_time = array();
 
@@ -336,7 +341,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                     <div>
                         <a class="wpa-back-link" href="<?php echo esc_url( WPA_Automation_Editor_Helpers::get_base_page_url() ); ?>">← <?php esc_html_e( 'Zur Übersicht zurück', 'wp-automation-editor' ); ?></a>
                         <h2><?php esc_html_e( 'Beitrag bearbeiten', 'wp-automation-editor' ); ?></h2>
-                        <p><?php esc_html_e( 'Solange diese Seite offen ist, bleibt der Beitrag für andere Personen gesperrt.', 'wp-automation-editor' ); ?></p>
+                        <p class="wpa-help-text"><?php esc_html_e( 'Solange diese Seite offen ist, bleibt der Beitrag für andere Personen gesperrt.', 'wp-automation-editor' ); ?></p>
                     </div>
                 </div>
 
@@ -346,193 +351,247 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                     <input type="hidden" name="redirect_url" value="<?php echo esc_url( WPA_Automation_Editor_Helpers::get_edit_url( $post_id ) ); ?>">
                     <?php wp_nonce_field( 'wpa_save_post_' . $post_id, 'wpa_nonce' ); ?>
 
-                    <div class="wpa-featured-image-box">
-                        <label for="wpa_featured_image"><?php esc_html_e( 'Beitragsbild', 'wp-automation-editor' ); ?></label>
+                    <div class="wpa-form-section wpa-publish-type-section">
+                        <h3><?php esc_html_e( 'Ausgabeart', 'wp-automation-editor' ); ?></h3>
 
-                        <?php if ( ! empty( $featured_image_html ) ) : ?>
-                            <div class="wpa-featured-image-wrap">
-                                <?php echo wp_kses_post( $featured_image_html ); ?>
-                            </div>
+                        <div class="wpa-radio-group">
+                            <label class="wpa-radio-card">
+                                <input
+                                    type="radio"
+                                    name="remote_publish_type"
+                                    value="newsletter"
+                                    <?php checked( $remote_publish_type, 'newsletter' ); ?>
+                                >
+                                <span>
+                                    <strong><?php esc_html_e( 'Newsletter', 'wp-automation-editor' ); ?></strong>
+                                    <small><?php esc_html_e( 'Der Beitrag wird am Newslettertag veröffentlicht.', 'wp-automation-editor' ); ?></small>
+                                </span>
+                            </label>
 
-                            <?php if ( current_user_can( 'upload_files' ) ) : ?>
-                                <div class="wpa-featured-image-upload">
-                                    <input
-                                        type="file"
-                                        id="wpa_featured_image"
-                                        name="wpa_featured_image"
-                                        accept="image/jpeg,image/png,image/gif,image/webp"
-                                    >
+                            <label class="wpa-radio-card">
+                                <input
+                                    type="radio"
+                                    name="remote_publish_type"
+                                    value="immonews"
+                                    <?php checked( $remote_publish_type, 'immonews' ); ?>
+                                >
+                                <span>
+                                    <strong><?php esc_html_e( 'immoNews (nur als immo-invest.ch Beitrag veröffentlichen)', 'wp-automation-editor' ); ?></strong>
+                                    <small><?php esc_html_e( 'Der Beitrag wird mit Veröffentlichungsdatum und Uhrzeit geplant.', 'wp-automation-editor' ); ?></small>
+                                </span>
+                            </label>
+                        </div>
 
-                                    <p class="wpa-help-text">
-                                        <?php esc_html_e( 'Optional ein neues Bild auswählen. Es wird beim Speichern als neues Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
-                                    </p>
+                        <div class="wpa-publish-type-panel" data-wpa-publish-panel="newsletter">
+                            <div class="wpa-form-row">
+                                <label for="wpa_newsletter_id"><?php esc_html_e( 'Newsletter ID', 'wp-automation-editor' ); ?></label>
 
-                                    <label class="wpa-checkbox-label">
-                                        <input type="checkbox" name="remove_featured_image" value="1">
-                                        <?php esc_html_e( 'Aktuelles Beitragsbild entfernen', 'wp-automation-editor' ); ?>
-                                    </label>
-                                </div>
-                            <?php endif; ?>
-                        <?php else : ?>
-                            <div class="wpa-featured-image-empty">
-                                <?php esc_html_e( 'Für diesen Beitrag ist noch kein Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
-                            </div>
+                                <input
+                                    type="number"
+                                    id="wpa_newsletter_id"
+                                    name="newsletter_id"
+                                    min="0"
+                                    step="1"
+                                    value="<?php echo esc_attr( $newsletter_id ); ?>"
+                                >
 
-                            <?php if ( current_user_can( 'upload_files' ) ) : ?>
-                                <div class="wpa-featured-image-upload">
-                                    <input
-                                        type="file"
-                                        id="wpa_featured_image"
-                                        name="wpa_featured_image"
-                                        accept="image/jpeg,image/png,image/gif,image/webp"
-                                    >
-
-                                    <p class="wpa-help-text">
-                                        <?php esc_html_e( 'Bild auswählen und danach unten auf Speichern klicken.', 'wp-automation-editor' ); ?>
-                                    </p>
-                                </div>
-                            <?php else : ?>
                                 <p class="wpa-help-text">
-                                    <?php esc_html_e( 'Du hast keine Berechtigung, Bilder hochzuladen.', 'wp-automation-editor' ); ?>
+                                    <?php esc_html_e( 'Hier die Newsletter-Nummer angeben, falls der Beitrag in den Newsletter kommen soll.', 'wp-automation-editor' ); ?>
                                 </p>
-                            <?php endif; ?>
-                        <?php endif; ?>
-                    </div>
+                            </div>
+                        </div>
 
-                    <div class="wpa-midjourney-box">
-                        <label><?php esc_html_e( 'Midjourney Prompt', 'wp-automation-editor' ); ?></label>
-                        <div class="wpa-featured-image-wrap">
-                            <?php echo nl2br( esc_html( $midjourney_prompt ) ); ?>
+                        <div class="wpa-publish-type-panel" data-wpa-publish-panel="immonews">
+                            <div class="wpa-form-grid">
+                                <div class="wpa-form-row">
+                                    <label for="wpa_remote_publish_date"><?php esc_html_e( 'Remote-Veröffentlichungsdatum', 'wp-automation-editor' ); ?></label>
+
+                                    <input
+                                        type="date"
+                                        id="wpa_remote_publish_date"
+                                        name="remote_publish_date"
+                                        value="<?php echo esc_attr( $remote_publish_date ); ?>"
+                                    >
+
+                                    <p class="wpa-help-text">
+                                        <?php esc_html_e( 'Datum für die Veröffentlichung auf der importierten Webseite.', 'wp-automation-editor' ); ?>
+                                    </p>
+                                </div>
+
+                                <div class="wpa-form-row">
+                                    <label for="wpa_remote_publish_time"><?php esc_html_e( 'Remote-Veröffentlichungszeit', 'wp-automation-editor' ); ?></label>
+
+                                    <select id="wpa_remote_publish_time" name="remote_publish_time">
+                                        <option value=""><?php esc_html_e( 'Keine Zeit auswählen', 'wp-automation-editor' ); ?></option>
+
+                                        <?php foreach ( $remote_publish_time_options as $time_value => $time_label ) : ?>
+                                            <?php
+                                            $occupied_remote_publish_slot = isset( $occupied_remote_publish_slots_by_time[ $time_value ] )
+                                                ? $occupied_remote_publish_slots_by_time[ $time_value ]
+                                                : array();
+
+                                            $is_time_occupied = ! empty( $occupied_remote_publish_slot );
+
+                                            $occupied_post_title = isset( $occupied_remote_publish_slot['title'] )
+                                                ? $occupied_remote_publish_slot['title']
+                                                : '';
+
+                                            $time_option_label = $is_time_occupied && '' !== $occupied_post_title
+                                                ? sprintf( __( '%1$s – Belegt: %2$s', 'wp-automation-editor' ), $time_label, $occupied_post_title )
+                                                : $time_label;
+                                            ?>
+
+                                            <option
+                                                value="<?php echo esc_attr( $time_value ); ?>"
+                                                class="<?php echo esc_attr( $is_time_occupied ? 'wpa-remote-publish-time-option-occupied' : '' ); ?>"
+                                                data-occupied-title="<?php echo esc_attr( $occupied_post_title ); ?>"
+                                                <?php selected( $remote_publish_time, $time_value ); ?>
+                                                <?php disabled( $is_time_occupied ); ?>
+                                            >
+                                                <?php echo esc_html( $time_option_label ); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+
+                                    <p class="wpa-help-text">
+                                        <?php esc_html_e( 'Erlaubte Zeiten: 08:00, 11:00, 14:00 oder 17:00 Uhr.', 'wp-automation-editor' ); ?>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="wpa-form-grid">
+                    <div class="wpa-form-section">
+                        <h3><?php esc_html_e( 'Bild & Prompt', 'wp-automation-editor' ); ?></h3>
+
+                        <div class="wpa-featured-image-box">
+                            <label for="wpa_featured_image"><?php esc_html_e( 'Beitragsbild', 'wp-automation-editor' ); ?></label>
+
+                            <?php if ( ! empty( $featured_image_html ) ) : ?>
+                                <div class="wpa-featured-image-wrap">
+                                    <?php echo wp_kses_post( $featured_image_html ); ?>
+                                </div>
+
+                                <?php if ( current_user_can( 'upload_files' ) ) : ?>
+                                    <div class="wpa-featured-image-upload">
+                                        <input
+                                            type="file"
+                                            id="wpa_featured_image"
+                                            name="wpa_featured_image"
+                                            accept="image/jpeg,image/png,image/gif,image/webp"
+                                        >
+
+                                        <p class="wpa-help-text">
+                                            <?php esc_html_e( 'Optional ein neues Bild auswählen. Es wird beim Speichern als neues Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
+                                        </p>
+
+                                        <label class="wpa-checkbox-label">
+                                            <input type="checkbox" name="remove_featured_image" value="1">
+                                            <?php esc_html_e( 'Aktuelles Beitragsbild entfernen', 'wp-automation-editor' ); ?>
+                                        </label>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else : ?>
+                                <div class="wpa-featured-image-empty">
+                                    <?php esc_html_e( 'Für diesen Beitrag ist noch kein Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
+                                </div>
+
+                                <?php if ( current_user_can( 'upload_files' ) ) : ?>
+                                    <div class="wpa-featured-image-upload">
+                                        <input
+                                            type="file"
+                                            id="wpa_featured_image"
+                                            name="wpa_featured_image"
+                                            accept="image/jpeg,image/png,image/gif,image/webp"
+                                        >
+
+                                        <p class="wpa-help-text">
+                                            <?php esc_html_e( 'Bild auswählen und danach unten auf Speichern klicken.', 'wp-automation-editor' ); ?>
+                                        </p>
+                                    </div>
+                                <?php else : ?>
+                                    <p class="wpa-help-text">
+                                        <?php esc_html_e( 'Du hast keine Berechtigung, Bilder hochzuladen.', 'wp-automation-editor' ); ?>
+                                    </p>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="wpa-midjourney-box">
+                            <label><?php esc_html_e( 'Midjourney Prompt', 'wp-automation-editor' ); ?></label>
+
+                            <div class="wpa-featured-image-wrap">
+                                <?php echo nl2br( esc_html( $midjourney_prompt ) ); ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wpa-form-section">
+                        <h3><?php esc_html_e( 'Beitragsinhalt', 'wp-automation-editor' ); ?></h3>
+
                         <div class="wpa-form-row">
                             <label for="wpa_post_title"><?php esc_html_e( 'Titel', 'wp-automation-editor' ); ?></label>
                             <input type="text" id="wpa_post_title" name="post_title" value="<?php echo esc_attr( $post->post_title ); ?>" required>
                         </div>
 
                         <div class="wpa-form-row">
-                            <label for="wpa_newsletter_id"><?php esc_html_e( 'Newsletter ID', 'wp-automation-editor' ); ?></label>
-                            <input
-                                type="number"
-                                id="wpa_newsletter_id"
-                                name="newsletter_id"
-                                min="0"
-                                step="1"
-                                value="<?php echo esc_attr( $newsletter_id ); ?>"
-                            >
-                            <p class="wpa-help-text">
-                                <?php esc_html_e( 'Hier die Newsletter-Nummer angeben, falls der Beitrag in den Newsletter kommen soll.', 'wp-automation-editor' ); ?>
-                            </p>
-                        </div>
-                        
-                        <div class="wpa-form-row">
-                            <label for="wpa_remote_publish_date"><?php esc_html_e( 'Remote-Veröffentlichungsdatum', 'wp-automation-editor' ); ?></label>
-
-                            <input
-                                type="date"
-                                id="wpa_remote_publish_date"
-                                name="remote_publish_date"
-                                value="<?php echo esc_attr( $remote_publish_date ); ?>"
-                            >
-
-                            <p class="wpa-help-text">
-                                <?php esc_html_e( 'Nur verwenden, wenn keine Newsletter ID gesetzt ist.', 'wp-automation-editor' ); ?>
-                            </p>
+                            <label for="wpa_post_excerpt"><?php esc_html_e( 'Textauszug', 'wp-automation-editor' ); ?></label>
+                            <textarea id="wpa_post_excerpt" name="post_excerpt" rows="5"><?php echo esc_textarea( $post->post_excerpt ); ?></textarea>
                         </div>
 
                         <div class="wpa-form-row">
-                            <label for="wpa_remote_publish_time"><?php esc_html_e( 'Remote-Veröffentlichungszeit', 'wp-automation-editor' ); ?></label>
+                            <label><?php esc_html_e( 'Inhalt', 'wp-automation-editor' ); ?></label>
 
-                            <select id="wpa_remote_publish_time" name="remote_publish_time">
-                                <option value=""><?php esc_html_e( 'Keine Zeit auswählen', 'wp-automation-editor' ); ?></option>
-
-                                <?php foreach ( $remote_publish_time_options as $time_value => $time_label ) : ?>
-                                    <?php
-                                    $occupied_remote_publish_slot = isset( $occupied_remote_publish_slots_by_time[ $time_value ] )
-                                        ? $occupied_remote_publish_slots_by_time[ $time_value ]
-                                        : array();
-
-                                    $is_time_occupied = ! empty( $occupied_remote_publish_slot );
-                                    $occupied_post_title = isset( $occupied_remote_publish_slot['title'] )
-                                        ? $occupied_remote_publish_slot['title']
-                                        : '';
-
-                                    $time_option_label = $is_time_occupied && '' !== $occupied_post_title
-                                        ? sprintf( __( '%1$s – Belegt: %2$s', 'wp-automation-editor' ), $time_label, $occupied_post_title )
-                                        : $time_label;
-                                    ?>
-
-                                    <option
-                                        value="<?php echo esc_attr( $time_value ); ?>"
-                                        class="<?php echo esc_attr( $is_time_occupied ? 'wpa-remote-publish-time-option-occupied' : '' ); ?>"
-                                        data-occupied-title="<?php echo esc_attr( $occupied_post_title ); ?>"
-                                        <?php selected( $remote_publish_time, $time_value ); ?>
-                                        <?php disabled( $is_time_occupied ); ?>
-                                    >
-                                        <?php echo esc_html( $time_option_label ); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-
-                            <p class="wpa-help-text">
-                                <?php esc_html_e( 'Erlaubte Zeiten: 08:00, 11:00, 14:00 oder 17:00 Uhr.', 'wp-automation-editor' ); ?>
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="wpa-form-row">
-                        <label for="wpa_post_excerpt"><?php esc_html_e( 'Textauszug', 'wp-automation-editor' ); ?></label>
-                        <textarea id="wpa_post_excerpt" name="post_excerpt" rows="5"><?php echo esc_textarea( $post->post_excerpt ); ?></textarea>
-                    </div>
-
-                    <div class="wpa-form-row">
-                        <label><?php esc_html_e( 'Inhalt', 'wp-automation-editor' ); ?></label>
-                        <div class="wpa-editor-box">
-                            <?php
-                            wp_editor(
-                                $post->post_content,
-                                'wpa_post_content_editor',
-                                array(
-                                    'textarea_name' => 'post_content',
-                                    'textarea_rows' => 18,
-                                    'media_buttons' => false,
-                                    'teeny'         => false,
-                                )
-                            );
-                            ?>
-                        </div>
-                    </div>
-
-                    <div class="wpa-form-grid">
-                        <div class="wpa-form-row">
-                            <label for="wpa_post_categories"><?php esc_html_e( 'Kategorien', 'wp-automation-editor' ); ?></label>
-                            <select id="wpa_post_categories" name="post_categories[]" multiple class="wpa-categories-select">
-                                <?php foreach ( $all_categories as $category ) : ?>
-                                    <option value="<?php echo esc_attr( $category->term_id ); ?>" <?php selected( in_array( (int) $category->term_id, $selected_category_ids, true ) ); ?>>
-                                        <?php echo esc_html( $category->name ); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="wpa-help-text"><?php esc_html_e( 'Mehrere Kategorien können ausgewählt werden.', 'wp-automation-editor' ); ?></p>
+                            <div class="wpa-editor-box">
+                                <?php
+                                wp_editor(
+                                    $post->post_content,
+                                    'wpa_post_content_editor',
+                                    array(
+                                        'textarea_name' => 'post_content',
+                                        'textarea_rows' => 18,
+                                        'media_buttons' => false,
+                                        'teeny'         => false,
+                                    )
+                                );
+                                ?>
+                            </div>
                         </div>
 
-                        <div class="wpa-form-row">
-                            <label for="wpa_post_tags"><?php esc_html_e( 'Schlagwörter', 'wp-automation-editor' ); ?></label>
-                            <select id="wpa_post_tags" name="post_tags[]" multiple class="wpa-tags-select">
-                                <?php foreach ( $all_tag_names as $tag_name ) : ?>
-                                    <option value="<?php echo esc_attr( $tag_name ); ?>" <?php selected( in_array( $tag_name, $selected_tags, true ) ); ?>>
-                                        <?php echo esc_html( $tag_name ); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <p class="wpa-help-text"><?php esc_html_e( 'Vorhandene Schlagwörter auswählen oder neue eintippen und mit Enter bestätigen.', 'wp-automation-editor' ); ?></p>
+                        <div class="wpa-form-grid">
+                            <div class="wpa-form-row">
+                                <label for="wpa_post_categories"><?php esc_html_e( 'Kategorien', 'wp-automation-editor' ); ?></label>
+
+                                <select id="wpa_post_categories" name="post_categories[]" multiple class="wpa-categories-select">
+                                    <?php foreach ( $all_categories as $category ) : ?>
+                                        <option value="<?php echo esc_attr( $category->term_id ); ?>" <?php selected( in_array( (int) $category->term_id, $selected_category_ids, true ) ); ?>>
+                                            <?php echo esc_html( $category->name ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+
+                                <p class="wpa-help-text"><?php esc_html_e( 'Mehrere Kategorien können ausgewählt werden.', 'wp-automation-editor' ); ?></p>
+                            </div>
+
+                            <div class="wpa-form-row">
+                                <label for="wpa_post_tags"><?php esc_html_e( 'Schlagwörter', 'wp-automation-editor' ); ?></label>
+
+                                <select id="wpa_post_tags" name="post_tags[]" multiple class="wpa-tags-select">
+                                    <?php foreach ( $all_tag_names as $tag_name ) : ?>
+                                        <option value="<?php echo esc_attr( $tag_name ); ?>" <?php selected( in_array( $tag_name, $selected_tags, true ) ); ?>>
+                                            <?php echo esc_html( $tag_name ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+
+                                <p class="wpa-help-text"><?php esc_html_e( 'Vorhandene Schlagwörter auswählen oder neue eintippen und mit Enter bestätigen.', 'wp-automation-editor' ); ?></p>
+                            </div>
                         </div>
                     </div>
 
                     <div class="wpa-form-row">
                         <label for="wpa_workflow_status"><?php esc_html_e( 'Workflow-Status', 'wp-automation-editor' ); ?></label>
+
                         <select id="wpa_workflow_status" name="workflow_status">
                             <?php foreach ( $status_options as $status_key => $status_label ) : ?>
                                 <option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_key, $current_status ); ?>>

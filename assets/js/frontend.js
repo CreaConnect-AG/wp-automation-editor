@@ -3,6 +3,65 @@ document.addEventListener('DOMContentLoaded', function () {
     const tagSelectField = document.querySelector('.wpa-tags-select');
     const editForm = document.querySelector('.wpa-edit-form');
 
+    function initRemotePublishTypeFields() {
+        if (!editForm) {
+            return;
+        }
+
+        const publishTypeRadios = editForm.querySelectorAll('input[name="remote_publish_type"]');
+        const publishTypePanels = editForm.querySelectorAll('[data-wpa-publish-panel]');
+        const newsletterIdField = editForm.querySelector('#wpa_newsletter_id');
+        const remotePublishDateField = editForm.querySelector('#wpa_remote_publish_date');
+        const remotePublishTimeField = editForm.querySelector('#wpa_remote_publish_time');
+
+        if (!publishTypeRadios.length || !publishTypePanels.length) {
+            return;
+        }
+
+        function getSelectedPublishType() {
+            const selectedRadio = editForm.querySelector('input[name="remote_publish_type"]:checked');
+
+            return selectedRadio ? selectedRadio.value : 'newsletter';
+        }
+
+        function updatePublishTypeFields() {
+            const selectedPublishType = getSelectedPublishType();
+            const isNewsletter = selectedPublishType === 'newsletter';
+            const isImmoNews = selectedPublishType === 'immonews';
+
+            publishTypePanels.forEach(function (panelElement) {
+                panelElement.hidden = panelElement.dataset.wpaPublishPanel !== selectedPublishType;
+            });
+
+            if (newsletterIdField) {
+                newsletterIdField.disabled = !isNewsletter;
+                newsletterIdField.required = isNewsletter;
+            }
+
+            if (remotePublishDateField) {
+                remotePublishDateField.disabled = !isImmoNews;
+                remotePublishDateField.required = isImmoNews;
+            }
+
+            if (remotePublishTimeField) {
+                remotePublishTimeField.disabled = !isImmoNews;
+                remotePublishTimeField.required = isImmoNews;
+            }
+
+            if (isImmoNews && remotePublishDateField) {
+                remotePublishDateField.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        publishTypeRadios.forEach(function (radioElement) {
+            radioElement.addEventListener('change', updatePublishTypeFields);
+        });
+
+        updatePublishTypeFields();
+    }
+
+    initRemotePublishTypeFields();
+
     function initRemotePublishSlots() {
         const remotePublishDateField = document.querySelector('#wpa_remote_publish_date');
         const remotePublishTimeField = document.querySelector('#wpa_remote_publish_time');
