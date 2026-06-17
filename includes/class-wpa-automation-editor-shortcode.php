@@ -364,7 +364,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 >
                                 <span>
                                     <strong><?php esc_html_e( 'Newsletter', 'wp-automation-editor' ); ?></strong>
-                                    <small><?php esc_html_e( 'Der Beitrag wird am Newslettertag veröffentlicht.', 'wp-automation-editor' ); ?></small>
+                                    <small><?php esc_html_e( 'Der Beitrag wird am Newsletter-Tag veröffentlicht.', 'wp-automation-editor' ); ?></small>
                                 </span>
                             </label>
 

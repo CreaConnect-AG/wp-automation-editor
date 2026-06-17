@@ -71,10 +71,11 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
 
         public static function get_remote_publish_time_options() {
             return array(
-                '08:00' => __( '08:00 Uhr', 'wp-automation-editor' ),
+                '09:00' => __( '09:00 Uhr', 'wp-automation-editor' ),
                 '11:00' => __( '11:00 Uhr', 'wp-automation-editor' ),
                 '14:00' => __( '14:00 Uhr', 'wp-automation-editor' ),
-                '17:00' => __( '17:00 Uhr', 'wp-automation-editor' ),
+                '16:00' => __( '16:00 Uhr', 'wp-automation-editor' ),
+                '19:00' => __( '19:00 Uhr', 'wp-automation-editor' ),
             );
         }
 
