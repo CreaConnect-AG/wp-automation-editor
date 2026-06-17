@@ -404,7 +404,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                         <div class="wpa-publish-type-panel" data-wpa-publish-panel="immonews">
                             <div class="wpa-form-grid">
                                 <div class="wpa-form-row">
-                                    <label for="wpa_remote_publish_date"><?php esc_html_e( 'Remote-Veröffentlichungsdatum', 'wp-automation-editor' ); ?></label>
+                                    <label for="wpa_remote_publish_date"><?php esc_html_e( 'Veröffentlichungsdatum (immo-invest.ch)', 'wp-automation-editor' ); ?></label>
 
                                     <input
                                         type="date"
@@ -419,7 +419,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 </div>
 
                                 <div class="wpa-form-row">
-                                    <label for="wpa_remote_publish_time"><?php esc_html_e( 'Remote-Veröffentlichungszeit', 'wp-automation-editor' ); ?></label>
+                                    <label for="wpa_remote_publish_time"><?php esc_html_e( 'Veröffentlichungszeit (immo-invest.ch)', 'wp-automation-editor' ); ?></label>
 
                                     <select id="wpa_remote_publish_time" name="remote_publish_time">
                                         <option value=""><?php esc_html_e( 'Keine Zeit auswählen', 'wp-automation-editor' ); ?></option>
@@ -454,7 +454,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                     </select>
 
                                     <p class="wpa-help-text">
-                                        <?php esc_html_e( 'Erlaubte Zeiten: 08:00, 11:00, 14:00 oder 17:00 Uhr.', 'wp-automation-editor' ); ?>
+                                        <?php esc_html_e( 'Erlaubte Zeiten: 09:00, 11:00, 14:00, 16:00 Uhr oder 19:00 Uhr.', 'wp-automation-editor' ); ?>
                                     </p>
                                 </div>
                             </div>
