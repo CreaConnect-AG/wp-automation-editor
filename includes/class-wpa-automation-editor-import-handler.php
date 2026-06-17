@@ -49,24 +49,12 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 					'stop_queue' => $this->should_stop_queue( $result ),
 				);
 
-				try {
-					$this->send_teams_import_notification( $post_id, false, $error_data );
-				} catch ( Throwable $exception ) {
-					$this->log_message(
-						'Import Teams notification crashed for local post ' . absint( $post_id ) . ': ' . $exception->getMessage()
-					);
-				}
+				$this->send_teams_import_notification( $post_id, false, $error_data );
 
 				wp_send_json_error( $error_data, $status_code );
 			}
 
-			try {
-				$this->send_teams_import_notification( $post_id, true, $result );
-			} catch ( Throwable $exception ) {
-				$this->log_message(
-					'Import Teams notification crashed for local post ' . absint( $post_id ) . ': ' . $exception->getMessage()
-				);
-			}
+			$this->send_teams_import_notification( $post_id, true, $result );
 
 			wp_send_json_success( $result );
 		}
@@ -835,29 +823,13 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			$webhook_url = self::get_import_teams_webhook_url();
 
 			if ( empty( $webhook_url ) || 'https://YOUR-IMPORT-WEBHOOK-URL-HERE' === $webhook_url ) {
-				$this->log_message( 'Import Teams notification skipped for local post ' . absint( $post_id ) . ': webhook URL is missing or still placeholder.' );
-				return new WP_Error(
-					'wpa_import_teams_webhook_missing',
-					__( 'Die Import Teams Webhook URL fehlt.', 'wp-automation-editor' )
-				);
-			}
-
-			if ( false === filter_var( $webhook_url, FILTER_VALIDATE_URL ) ) {
-				$this->log_message( 'Import Teams notification skipped for local post ' . absint( $post_id ) . ': webhook URL is invalid.' );
-				return new WP_Error(
-					'wpa_import_teams_webhook_invalid',
-					__( 'Die Import Teams Webhook URL ist ungültig.', 'wp-automation-editor' )
-				);
+				return;
 			}
 
 			$post = get_post( $post_id );
 
 			if ( ! $post instanceof WP_Post ) {
-				$this->log_message( 'Import Teams notification skipped: post not found. Local post ID: ' . absint( $post_id ) );
-				return new WP_Error(
-					'wpa_import_teams_post_missing',
-					__( 'Der Beitrag für die Teams-Benachrichtigung wurde nicht gefunden.', 'wp-automation-editor' )
-				);
+				return;
 			}
 
 			$current_user = wp_get_current_user();
@@ -915,220 +887,68 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 				$midjourney_prompt_en = sanitize_textarea_field( (string) $midjourney_prompt_en );
 			}
 
-			$publish_information = $this->get_import_publish_information_for_notification( $post_id );
-
 			$payload = array(
-				'notification_type' => 'remote_import',
-				'import_successful' => (bool) $import_successful,
-				'import_status' => $import_successful ? 'successful' : 'failed',
-				'title' => get_the_title( $post_id ),
-				'post_id' => absint( $post_id ),
-				'post_url' => get_permalink( $post_id ),
-				'edit_url' => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
-				'author' => $current_user && $current_user->exists() ? $current_user->display_name : '',
-				'imported_at' => current_time( 'mysql' ),
-				'remote_post_id' => absint( $remote_post_id ),
-				'remote_url' => (string) $remote_url,
-				'message' => (string) $message,
-				'publish_information' => (string) $publish_information,
-				'status_code' => absint( $status_code ),
-				'stop_queue' => (bool) $stop_queue,
-				'has_featured_image' => (bool) $has_featured_image,
-				'featured_image_status' => (string) $featured_image_status,
-				'featured_image_status_label' => (string) $featured_image_status_label,
-				'remote_media_status' => (string) $remote_media_status,
-				'remote_media_error' => (string) $remote_media_error,
-				'midjourney_prompt_en' => (string) $midjourney_prompt_en,
+				'notification_type'           => 'remote_import',
+				'import_successful'           => (bool) $import_successful,
+				'import_status'               => $import_successful ? 'successful' : 'failed',
+				'title'                       => get_the_title( $post_id ),
+				'post_id'                     => $post_id,
+				'post_url'                    => get_permalink( $post_id ),
+				'edit_url'                    => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
+				'author'                      => $current_user && $current_user->exists() ? $current_user->display_name : '',
+				'imported_at'                 => current_time( 'mysql' ),
+				'remote_post_id'              => $remote_post_id,
+				'remote_url'                  => $remote_url,
+				'message'                     => $message,
+				'status_code'                 => $status_code,
+				'stop_queue'                  => $stop_queue,
+				'has_featured_image'          => $has_featured_image,
+				'featured_image_status'       => $featured_image_status,
+				'featured_image_status_label' => $featured_image_status_label,
+				'remote_media_status'         => $remote_media_status,
+				'remote_media_error'          => $remote_media_error,
+				'midjourney_prompt_en'        => $midjourney_prompt_en,
 			);
-
-			$payload_json = wp_json_encode( $payload, JSON_UNESCAPED_UNICODE );
-
-			if ( false === $payload_json ) {
-				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ': JSON payload could not be encoded.' );
-				return new WP_Error(
-					'wpa_import_teams_json_failed',
-					__( 'Die Teams-Payload konnte nicht als JSON erstellt werden.', 'wp-automation-editor' )
-				);
-			}
 
 			$response = wp_remote_post(
 				$webhook_url,
 				array(
-					'timeout' => 15,
-					'redirection' => 3,
+					'timeout' => 10,
 					'headers' => array(
 						'Content-Type' => 'application/json',
-						'Accept' => 'application/json',
 					),
-					'body' => $payload_json,
+					'body' => wp_json_encode( $payload ),
 				)
 			);
 
 			if ( is_wp_error( $response ) ) {
 				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ': ' . $response->get_error_message() );
-				return $response;
+				return;
 			}
 
-			$response_code = (int) wp_remote_retrieve_response_code( $response );
-			$response_body = (string) wp_remote_retrieve_body( $response );
+			$response_code = wp_remote_retrieve_response_code( $response );
 
 			if ( 200 > $response_code || 299 < $response_code ) {
-				$this->log_message(
-					'Import Teams notification failed for local post ' . absint( $post_id ) .
-					' with HTTP status: ' . $response_code .
-					'. Response body: ' . wp_strip_all_tags( $response_body )
-				);
-
-				return new WP_Error(
-					'wpa_import_teams_http_failed',
-					sprintf(
-						__( 'Teams-Benachrichtigung fehlgeschlagen. HTTP-Code: %d', 'wp-automation-editor' ),
-						$response_code
-					)
-				);
+				$this->log_message( 'Import Teams notification failed for local post ' . absint( $post_id ) . ' with HTTP status: ' . $response_code );
 			}
-
-			$this->log_message(
-				'Import Teams notification sent for local post ' . absint( $post_id ) .
-				' with HTTP status: ' . $response_code
-			);
-
-			return true;
-		}
-
-		private function get_import_publish_information_for_notification( $post_id ) {
-			$newsletter_id = $this->get_field_value( 'newsletter_id', $post_id );
-
-			if ( '' !== (string) $newsletter_id ) {
-				$newsletter_id = absint( $newsletter_id );
-
-				if ( $newsletter_id > 0 ) {
-					return sprintf(
-						__( 'Der Beitrag wird mit dem immoNewsletter #%s veröffentlicht.', 'wp-automation-editor' ),
-						$newsletter_id
-					);
-				}
-			}
-
-			$remote_publish_date = '';
-			$remote_publish_time = '';
-
-			if ( method_exists( 'WPA_Automation_Editor_Helpers', 'get_post_remote_publish_schedule' ) ) {
-				$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
-
-				if ( is_array( $remote_publish_schedule ) ) {
-					$remote_publish_date = ! empty( $remote_publish_schedule['date'] ) ? (string) $remote_publish_schedule['date'] : '';
-					$remote_publish_time = ! empty( $remote_publish_schedule['time'] ) ? (string) $remote_publish_schedule['time'] : '';
-				}
-			}
-
-			if ( '' === $remote_publish_date ) {
-				$remote_publish_date = (string) get_post_meta( $post_id, 'wpa_remote_publish_wpa_remote_publish_date', true );
-			}
-
-			if ( '' === $remote_publish_time ) {
-				$remote_publish_time = (string) get_post_meta( $post_id, 'wpa_remote_publish_wpa_remote_publish_time', true );
-			}
-
-			if ( '' === $remote_publish_date ) {
-				$remote_publish_date = (string) get_post_meta( $post_id, 'wpa_remote_publish_date', true );
-			}
-
-			if ( '' === $remote_publish_time ) {
-				$remote_publish_time = (string) get_post_meta( $post_id, 'wpa_remote_publish_time', true );
-			}
-
-			$remote_publish_date = $this->format_notification_publish_date( $remote_publish_date );
-			$remote_publish_time = $this->format_notification_publish_time( $remote_publish_time );
-
-			if ( '' === $remote_publish_date || '' === $remote_publish_time ) {
-				return '';
-			}
-
-			if ( has_post_thumbnail( $post_id ) ) {
-				return sprintf(
-					__( 'Der Beitrag ist für den %1$s um %2$s vorgeplant auf immo-invest.ch.', 'wp-automation-editor' ),
-					$remote_publish_date,
-					$remote_publish_time
-				);
-			}
-
-			return sprintf(
-				__( "HANDLUNGSBEDARF:\nDas Beitragsbild fehlt, der Beitrag soll am %1$s um %2$s vorgeplant werden auf immo-invest.ch.", 'wp-automation-editor' ),
-				$remote_publish_date,
-				$remote_publish_time
-			);
-		}
-
-		private function format_notification_publish_date( $remote_publish_date ) {
-			$remote_publish_date = is_string( $remote_publish_date ) ? trim( $remote_publish_date ) : '';
-
-			if ( '' === $remote_publish_date ) {
-				return '';
-			}
-
-			if ( preg_match( '/^\d{8}$/', $remote_publish_date ) ) {
-				$remote_publish_date = substr( $remote_publish_date, 0, 4 ) . '-' . substr( $remote_publish_date, 4, 2 ) . '-' . substr( $remote_publish_date, 6, 2 );
-			}
-
-			if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $remote_publish_date ) ) {
-				return '';
-			}
-
-			$timestamp = strtotime( $remote_publish_date . ' 00:00:00' );
-
-			if ( false === $timestamp ) {
-				return '';
-			}
-
-			return date_i18n( get_option( 'date_format' ), $timestamp );
-		}
-
-		private function format_notification_publish_time( $remote_publish_time ) {
-			$remote_publish_time = is_string( $remote_publish_time ) ? sanitize_text_field( $remote_publish_time ) : '';
-
-			if ( '' === $remote_publish_time ) {
-				return '';
-			}
-
-			if ( method_exists( 'WPA_Automation_Editor_Helpers', 'get_remote_publish_time_options' ) ) {
-				$time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
-
-				if ( isset( $time_options[ $remote_publish_time ] ) ) {
-					return wp_strip_all_tags( $time_options[ $remote_publish_time ] );
-				}
-			}
-
-			if ( preg_match( '/^\d{2}:\d{2}$/', $remote_publish_time ) ) {
-				return $remote_publish_time . ' Uhr';
-			}
-
-			return '';
 		}
 
 		private function log_message( $message ) {
-			$formatted_message = '[' . current_time( 'mysql' ) . '] ' . $message;
-
 			$upload_dir = wp_upload_dir();
 
 			if ( empty( $upload_dir['basedir'] ) ) {
-				error_log( '[wp-automation-editor] ' . $formatted_message );
 				return;
 			}
 
 			$log_dir = trailingslashit( $upload_dir['basedir'] ) . 'wp-automation-editor';
 
 			if ( ! wp_mkdir_p( $log_dir ) ) {
-				error_log( '[wp-automation-editor] ' . $formatted_message );
 				return;
 			}
 
 			$log_file = trailingslashit( $log_dir ) . 'import.log';
-			$written = file_put_contents( $log_file, $formatted_message . PHP_EOL, FILE_APPEND | LOCK_EX );
 
-			if ( false === $written ) {
-				error_log( '[wp-automation-editor] ' . $formatted_message );
-			}
+			file_put_contents( $log_file, '[' . current_time( 'mysql' ) . '] ' . $message . PHP_EOL, FILE_APPEND | LOCK_EX );
 		}
 	}
 }
