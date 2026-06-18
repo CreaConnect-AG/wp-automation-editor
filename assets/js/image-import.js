@@ -1,220 +1,330 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const importWrapper = document.querySelector('[data-wpa-image-import]');
+	const importWrapper = document.querySelector('[data-wpa-image-import]');
 
-    if (!importWrapper || typeof window.wpaAutomationImageImport === 'undefined') {
-        return;
-    }
+	if (!importWrapper || typeof window.wpaAutomationImageImport === 'undefined') {
+		return;
+	}
 
-    const checkAllField = importWrapper.querySelector('[data-wpa-image-import-check-all]');
-    const selectedImportButton = importWrapper.querySelector('[data-wpa-image-import-selected]');
-    const progressField = importWrapper.querySelector('[data-wpa-image-import-progress]');
-    const delayMs = Number(window.wpaAutomationImageImport.delayMs || 0);
+	const checkAllField = importWrapper.querySelector('[data-wpa-image-import-check-all]');
+	const selectedImportButton = importWrapper.querySelector('[data-wpa-image-import-selected]');
+	const resetListButton = importWrapper.querySelector('[data-wpa-image-import-reset-list]');
+	const progressField = importWrapper.querySelector('[data-wpa-image-import-progress]');
+	const resetProgressField = importWrapper.querySelector('[data-wpa-image-import-reset-progress]');
+	const delayMs = Number(window.wpaAutomationImageImport.delayMs || 0);
+	const selectedImportButtonInitiallyDisabled = selectedImportButton ? selectedImportButton.disabled : false;
 
-    function setProgress(message) {
-        if (progressField) {
-            progressField.textContent = message || '';
-        }
-    }
+	function setProgress(message) {
+		if (progressField) {
+			progressField.textContent = message || '';
+		}
+	}
 
-    function wait(milliseconds) {
-        return new Promise(function (resolve) {
-            window.setTimeout(resolve, milliseconds);
-        });
-    }
+	function setResetProgress(message) {
+		if (resetProgressField) {
+			resetProgressField.textContent = message || '';
+		}
+	}
 
-    function getRow(postId) {
-        return importWrapper.querySelector('[data-wpa-image-import-row="' + postId + '"]');
-    }
+	function wait(milliseconds) {
+		return new Promise(function (resolve) {
+			window.setTimeout(resolve, milliseconds);
+		});
+	}
 
-    function setRowStatus(row, message, isError, remoteUrl) {
-        const statusField = row ? row.querySelector('[data-wpa-image-import-status]') : null;
+	function getRow(postId) {
+		return importWrapper.querySelector('[data-wpa-image-import-row="' + postId + '"]');
+	}
 
-        if (!statusField) {
-            return;
-        }
+	function setRowStatus(row, message, isError, remoteUrl) {
+		const statusField = row ? row.querySelector('[data-wpa-image-import-status]') : null;
 
-        statusField.classList.toggle('wpa-import-error', !!isError);
-        statusField.classList.toggle('wpa-import-success', !isError);
+		if (!statusField) {
+			return;
+		}
 
-        if (remoteUrl) {
-            statusField.innerHTML = '<a href="' + remoteUrl + '" target="_blank" rel="noopener">' + remoteUrl + '</a><div class="wpa-post-meta-line">' + message + '</div>';
-            return;
-        }
+		statusField.classList.toggle('wpa-import-error', !!isError);
+		statusField.classList.toggle('wpa-import-success', !isError);
+		statusField.textContent = '';
 
-        statusField.textContent = message;
-    }
+		if (remoteUrl) {
+			const remoteLink = document.createElement('a');
+			remoteLink.href = remoteUrl;
+			remoteLink.target = '_blank';
+			remoteLink.rel = 'noopener';
+			remoteLink.textContent = remoteUrl;
 
-    function removeImportedRow(row) {
-        if (!row) {
-            return;
-        }
+			const messageLine = document.createElement('div');
+			messageLine.className = 'wpa-post-meta-line';
+			messageLine.textContent = message;
 
-        row.remove();
+			statusField.appendChild(remoteLink);
+			statusField.appendChild(messageLine);
+			return;
+		}
 
-        if (!importWrapper.querySelector('[data-wpa-image-import-row]')) {
-            setProgress('Alle sichtbaren Beitragsbilder wurden importiert.');
-        }
-    }
+		statusField.textContent = message;
+	}
 
-    function setRowLoading(row, isLoading) {
-        if (!row) {
-            return;
-        }
+	function removeImportedRow(row) {
+		if (!row) {
+			return;
+		}
 
-        const button = row.querySelector('[data-wpa-image-import-one]');
-        const checkbox = row.querySelector('[data-wpa-image-import-checkbox]');
+		row.remove();
 
-        if (button) {
-            if (!button.dataset.originalText) {
-                button.dataset.originalText = button.textContent;
-            }
+		if (!importWrapper.querySelector('[data-wpa-image-import-row]')) {
+			setProgress('Alle sichtbaren Beitragsbilder wurden importiert.');
+		}
+	}
 
-            button.disabled = isLoading;
-            button.textContent = isLoading ? window.wpaAutomationImageImport.importingMessage : button.dataset.originalText;
-        }
+	function replaceListWithEmptyState(message) {
+		importWrapper.querySelectorAll('[data-wpa-image-import-row]').forEach(function (row) {
+			row.remove();
+		});
 
-        if (checkbox) {
-            checkbox.disabled = isLoading;
-        }
-    }
+		const tableWrap = importWrapper.querySelector('.wpa-table-wrap');
 
-    async function readJsonResponse(response) {
-        const responseText = await response.text();
+		if (tableWrap) {
+			const emptyState = document.createElement('div');
+			const emptyText = document.createElement('p');
 
-        if (!responseText) {
-            return null;
-        }
+			emptyState.className = 'wpa-empty-state';
+			emptyText.textContent = message || window.wpaAutomationImageImport.emptyAfterResetMessage;
 
-        try {
-            return JSON.parse(responseText);
-        } catch (error) {
-            return null;
-        }
-    }
+			emptyState.appendChild(emptyText);
+			tableWrap.replaceWith(emptyState);
+		}
 
-    async function importImage(postId) {
-        const row = getRow(postId);
-        setRowLoading(row, true);
-        setRowStatus(row, window.wpaAutomationImageImport.importingMessage, false, '');
+		const pagination = importWrapper.querySelector('.wpa-pagination');
 
-        const requestData = new FormData();
-        requestData.append('action', 'wpa_import_featured_image_to_remote');
-        requestData.append('nonce', window.wpaAutomationImageImport.nonce);
-        requestData.append('post_id', postId);
+		if (pagination) {
+			pagination.remove();
+		}
 
-        try {
-            const response = await fetch(window.wpaAutomationImageImport.ajaxUrl, {
-                method: 'POST',
-                credentials: 'same-origin',
-                body: requestData
-            });
+		if (checkAllField) {
+			checkAllField.checked = false;
+			checkAllField.disabled = true;
+		}
 
-            const responseData = await readJsonResponse(response);
+		if (selectedImportButton) {
+			selectedImportButton.disabled = true;
+		}
+	}
 
-            if (!response.ok || !responseData || !responseData.success) {
-                const message = responseData && responseData.data && responseData.data.message ? responseData.data.message : window.wpaAutomationImageImport.errorMessage + ' HTTP-Code: ' + response.status;
-                const stopQueue = !!(responseData && responseData.data && responseData.data.stop_queue);
-                setRowStatus(row, message, true, '');
+	function setRowLoading(row, isLoading) {
+		if (!row) {
+			return;
+		}
 
-                return {
-                    success: false,
-                    stopQueue: stopQueue,
-                    message: message
-                };
-            }
+		const button = row.querySelector('[data-wpa-image-import-one]');
+		const checkbox = row.querySelector('[data-wpa-image-import-checkbox]');
 
-            setRowStatus(row, responseData.data.message, false, responseData.data.remote_url);
+		if (button) {
+			if (!button.dataset.originalText) {
+				button.dataset.originalText = button.textContent;
+			}
 
-            return {
-                success: true,
-                stopQueue: false,
-                message: responseData.data.message
-            };
-        } catch (error) {
-            const message = error.message || window.wpaAutomationImageImport.errorMessage;
-            setRowStatus(row, message, true, '');
+			button.disabled = isLoading;
+			button.textContent = isLoading ? window.wpaAutomationImageImport.importingMessage : button.dataset.originalText;
+		}
 
-            return {
-                success: false,
-                stopQueue: true,
-                message: message
-            };
-        } finally {
-            setRowLoading(row, false);
-        }
-    }
+		if (checkbox) {
+			checkbox.disabled = isLoading;
+		}
+	}
 
-    importWrapper.addEventListener('click', async function (event) {
-        const singleButton = event.target.closest('[data-wpa-image-import-one]');
+	async function readJsonResponse(response) {
+		const responseText = await response.text();
 
-        if (!singleButton) {
-            return;
-        }
+		if (!responseText) {
+			return null;
+		}
 
-        event.preventDefault();
-        const postId = singleButton.getAttribute('data-wpa-image-import-one');
-        const row = getRow(postId);
-        const importResult = await importImage(postId);
+		try {
+			return JSON.parse(responseText);
+		} catch (error) {
+			return null;
+		}
+	}
 
-        if (importResult.success) {
-            removeImportedRow(row);
-        }
-    });
+	async function importImage(postId) {
+		const row = getRow(postId);
 
-    if (checkAllField) {
-        checkAllField.addEventListener('change', function () {
-            importWrapper.querySelectorAll('[data-wpa-image-import-checkbox]:not(:disabled)').forEach(function (checkbox) {
-                checkbox.checked = checkAllField.checked;
-            });
-        });
-    }
+		setRowLoading(row, true);
+		setRowStatus(row, window.wpaAutomationImageImport.importingMessage, false, '');
 
-    if (selectedImportButton) {
-        selectedImportButton.addEventListener('click', async function () {
-            const selectedCheckboxes = Array.from(importWrapper.querySelectorAll('[data-wpa-image-import-checkbox]:checked:not(:disabled)'));
+		const requestData = new FormData();
 
-            if (!selectedCheckboxes.length) {
-                setProgress('Bitte zuerst mindestens ein Beitragsbild auswählen.');
-                return;
-            }
+		requestData.append('action', 'wpa_import_featured_image_to_remote');
+		requestData.append('nonce', window.wpaAutomationImageImport.nonce);
+		requestData.append('post_id', postId);
 
-            if (!window.confirm(window.wpaAutomationImageImport.confirmMessage)) {
-                return;
-            }
+		try {
+			const response = await fetch(window.wpaAutomationImageImport.ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				body: requestData
+			});
 
-            selectedImportButton.disabled = true;
+			const responseData = await readJsonResponse(response);
 
-            let successfulImports = 0;
-            let stoppedEarly = false;
+			if (!response.ok || !responseData || !responseData.success) {
+				const message = responseData && responseData.data && responseData.data.message ? responseData.data.message : window.wpaAutomationImageImport.errorMessage + ' HTTP-Code: ' + response.status;
+				const stopQueue = !!(responseData && responseData.data && responseData.data.stop_queue);
 
-            for (let index = 0; index < selectedCheckboxes.length; index++) {
-                const postId = selectedCheckboxes[index].value;
-                setProgress((index + 1) + ' / ' + selectedCheckboxes.length + ' wird importiert...');
+				setRowStatus(row, message, true, '');
 
-                const importResult = await importImage(postId);
-                if (importResult.success) {
-                    successfulImports++;
-                    selectedCheckboxes[index].checked = false;
-                    removeImportedRow(getRow(postId));
-                }
+				return {
+					success: false,
+					stopQueue: stopQueue,
+					message: message
+				};
+			}
 
-                if (importResult.stopQueue) {
-                    stoppedEarly = true;
-                    setProgress(window.wpaAutomationImageImport.stoppedMessage + ' Erfolgreich: ' + successfulImports + ' / ' + selectedCheckboxes.length + '.');
-                    break;
-                }
+			setRowStatus(row, responseData.data.message, false, responseData.data.remote_url);
 
-                if (delayMs > 0 && index < selectedCheckboxes.length - 1) {
-                    setProgress('Kurze Pause zum Schutz der Zielseite...');
-                    await wait(delayMs);
-                }
-            }
+			return {
+				success: true,
+				stopQueue: false,
+				message: responseData.data.message
+			};
+		} catch (error) {
+			const message = error.message || window.wpaAutomationImageImport.errorMessage;
 
-            selectedImportButton.disabled = false;
+			setRowStatus(row, message, true, '');
 
-            if (!stoppedEarly) {
-                setProgress(window.wpaAutomationImageImport.finishedMessage + ' Erfolgreich: ' + successfulImports + ' / ' + selectedCheckboxes.length + '.');
-            }
-        });
-    }
+			return {
+				success: false,
+				stopQueue: true,
+				message: message
+			};
+		} finally {
+			setRowLoading(row, false);
+		}
+	}
+
+	importWrapper.addEventListener('click', async function (event) {
+		const singleButton = event.target.closest('[data-wpa-image-import-one]');
+
+		if (!singleButton) {
+			return;
+		}
+
+		event.preventDefault();
+
+		const postId = singleButton.getAttribute('data-wpa-image-import-one');
+		const row = getRow(postId);
+		const importResult = await importImage(postId);
+
+		if (importResult.success) {
+			removeImportedRow(row);
+		}
+	});
+
+	if (checkAllField) {
+		checkAllField.addEventListener('change', function () {
+			importWrapper.querySelectorAll('[data-wpa-image-import-checkbox]:not(:disabled)').forEach(function (checkbox) {
+				checkbox.checked = checkAllField.checked;
+			});
+		});
+	}
+
+	if (selectedImportButton) {
+		selectedImportButton.addEventListener('click', async function () {
+			const selectedCheckboxes = Array.from(importWrapper.querySelectorAll('[data-wpa-image-import-checkbox]:checked:not(:disabled)'));
+
+			if (!selectedCheckboxes.length) {
+				setProgress('Bitte zuerst mindestens ein Beitragsbild auswählen.');
+				return;
+			}
+
+			if (!window.confirm(window.wpaAutomationImageImport.confirmMessage)) {
+				return;
+			}
+
+			selectedImportButton.disabled = true;
+
+			let successfulImports = 0;
+			let stoppedEarly = false;
+
+			for (let index = 0; index < selectedCheckboxes.length; index++) {
+				const postId = selectedCheckboxes[index].value;
+
+				setProgress((index + 1) + ' / ' + selectedCheckboxes.length + ' wird importiert...');
+
+				const importResult = await importImage(postId);
+
+				if (importResult.success) {
+					successfulImports++;
+					selectedCheckboxes[index].checked = false;
+					removeImportedRow(getRow(postId));
+				}
+
+				if (importResult.stopQueue) {
+					stoppedEarly = true;
+					setProgress(window.wpaAutomationImageImport.stoppedMessage + ' Erfolgreich: ' + successfulImports + ' / ' + selectedCheckboxes.length + '.');
+					break;
+				}
+
+				if (delayMs > 0 && index < selectedCheckboxes.length - 1) {
+					setProgress('Kurze Pause zum Schutz der Zielseite...');
+					await wait(delayMs);
+				}
+			}
+
+			selectedImportButton.disabled = false;
+
+			if (!stoppedEarly) {
+				setProgress(window.wpaAutomationImageImport.finishedMessage + ' Erfolgreich: ' + successfulImports + ' / ' + selectedCheckboxes.length + '.');
+			}
+		});
+	}
+
+	if (resetListButton) {
+		resetListButton.addEventListener('click', async function () {
+			if (!window.confirm(window.wpaAutomationImageImport.resetConfirmMessage)) {
+				return;
+			}
+
+			resetListButton.disabled = true;
+
+			if (selectedImportButton) {
+				selectedImportButton.disabled = true;
+			}
+
+			setResetProgress(window.wpaAutomationImageImport.resettingMessage);
+
+			const requestData = new FormData();
+
+			requestData.append('action', 'wpa_reset_featured_image_import_list');
+			requestData.append('nonce', window.wpaAutomationImageImport.resetNonce);
+
+			try {
+				const response = await fetch(window.wpaAutomationImageImport.ajaxUrl, {
+					method: 'POST',
+					credentials: 'same-origin',
+					body: requestData
+				});
+
+				const responseData = await readJsonResponse(response);
+
+				if (!response.ok || !responseData || !responseData.success) {
+					const message = responseData && responseData.data && responseData.data.message ? responseData.data.message : window.wpaAutomationImageImport.resetErrorMessage + ' HTTP-Code: ' + response.status;
+					throw new Error(message);
+				}
+
+				const message = responseData.data && responseData.data.message ? responseData.data.message : window.wpaAutomationImageImport.emptyAfterResetMessage;
+
+				setResetProgress(message);
+				replaceListWithEmptyState(window.wpaAutomationImageImport.emptyAfterResetMessage);
+			} catch (error) {
+				setResetProgress(error.message || window.wpaAutomationImageImport.resetErrorMessage);
+				resetListButton.disabled = false;
+
+				if (selectedImportButton) {
+					selectedImportButton.disabled = selectedImportButtonInitiallyDisabled;
+				}
+			}
+		});
+	}
 });

@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPA_EDITOR_PLUGIN_VERSION', '1.4.1' );
+define( 'WPA_EDITOR_PLUGIN_VERSION', '1.4.2' );
 define( 'WPA_EDITOR_PLUGIN_FILE', __FILE__ );
 define( 'WPA_EDITOR_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPA_EDITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

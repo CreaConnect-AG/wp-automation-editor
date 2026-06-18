@@ -37,6 +37,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Plugin' ) ) {
 			add_action( 'wp_ajax_wpa_get_remote_publish_occupied_times', array( $this->post_handler, 'handle_get_remote_publish_occupied_times' ) );
 			add_action( 'wp_ajax_wpa_import_post_to_remote', array( $this->import_handler, 'handle_import_post' ) );
 			add_action( 'wp_ajax_wpa_import_featured_image_to_remote', array( $this->import_handler, 'handle_import_featured_image' ) );
+			add_action( 'wp_ajax_wpa_reset_featured_image_import_list', array( $this->import_handler, 'handle_reset_featured_image_import_list' ) );
 			add_action( WPA_Automation_Editor_Helpers::CLEANUP_CRON_HOOK, array( $this->cleanup_handler, 'trash_old_unbearbeitet_posts' ) );
 
 			$this->cleanup_handler->ensure_scheduled();

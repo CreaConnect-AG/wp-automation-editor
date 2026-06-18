@@ -19,6 +19,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 		const MEDIA_STATUS_DONE = 'done';
 		const MEDIA_STATUS_FAILED = 'failed';
 		const MEDIA_STATUS_SKIPPED = 'skipped';
+		const MEDIA_STATUS_RESET = 'reset';
 		const REMOTE_COOLDOWN_TRANSIENT = 'wpa_automation_editor_remote_import_cooldown_until';
 
 		public function handle_import_post() {
@@ -89,6 +90,117 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			}
 
 			wp_send_json_success( $result );
+		}
+
+		public function handle_reset_featured_image_import_list() {
+			if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Keine Berechtigung zum Zurücksetzen der Bildimport-Liste.', 'wp-automation-editor' ) ), 403 );
+			}
+
+			check_ajax_referer( 'wpa_reset_featured_image_import_list', 'nonce' );
+
+			$author_id = WPA_Automation_Editor_Helpers::get_automation_author_id();
+
+			if ( ! $author_id ) {
+				wp_send_json_error( array( 'message' => __( 'Der Benutzer wp-automation wurde nicht gefunden.', 'wp-automation-editor' ) ), 400 );
+			}
+
+			$post_ids_query = new WP_Query(
+				array(
+					'post_type'              => 'post',
+					'post_status'            => array( 'publish', 'draft', 'pending', 'future', 'private' ),
+					'author'                 => $author_id,
+					'posts_per_page'         => -1,
+					'fields'                 => 'ids',
+					'orderby'                => 'date',
+					'order'                  => 'DESC',
+					'ignore_sticky_posts'    => true,
+					'no_found_rows'          => true,
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
+					'meta_query'             => $this->build_resettable_image_import_meta_query(),
+				)
+			);
+
+			$reset_count = 0;
+
+			foreach ( $post_ids_query->posts as $post_id ) {
+				$post_id = absint( $post_id );
+
+				if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+					continue;
+				}
+
+				update_post_meta( $post_id, self::META_REMOTE_MEDIA_STATUS, self::MEDIA_STATUS_RESET );
+				delete_post_meta( $post_id, self::META_REMOTE_MEDIA_ERROR );
+
+				$reset_count++;
+			}
+
+			wp_reset_postdata();
+
+			$message = $reset_count > 0
+				? sprintf(
+					_n(
+						'%d Eintrag wurde aus der Bildimport-Liste entfernt.',
+						'%d Einträge wurden aus der Bildimport-Liste entfernt.',
+						$reset_count,
+						'wp-automation-editor'
+					),
+					$reset_count
+				)
+				: __( 'Es waren keine offenen Bildimport-Einträge vorhanden.', 'wp-automation-editor' );
+
+			wp_send_json_success(
+				array(
+					'reset_count' => $reset_count,
+					'message'     => $message,
+				)
+			);
+		}
+
+		private function build_resettable_image_import_meta_query() {
+			return array(
+				'relation' => 'AND',
+				array(
+					'key'     => self::META_REMOTE_POST_ID,
+					'value'   => array( '', '0' ),
+					'compare' => 'NOT IN',
+				),
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => self::META_REMOTE_MEDIA_ID,
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => self::META_REMOTE_MEDIA_ID,
+						'value'   => array( '', '0' ),
+						'compare' => 'IN',
+					),
+					array(
+						'key'     => self::META_REMOTE_MEDIA_STATUS,
+						'value'   => array(
+							self::MEDIA_STATUS_PENDING,
+							self::MEDIA_STATUS_FAILED,
+							self::MEDIA_STATUS_SKIPPED,
+						),
+						'compare' => 'IN',
+					),
+				),
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => self::META_REMOTE_MEDIA_STATUS,
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => self::META_REMOTE_MEDIA_STATUS,
+						'value'   => self::MEDIA_STATUS_RESET,
+						'compare' => '!=',
+					),
+				),
+			);
 		}
 
 		public static function get_remote_site_url() {

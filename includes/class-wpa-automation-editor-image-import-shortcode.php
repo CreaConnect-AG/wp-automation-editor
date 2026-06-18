@@ -64,6 +64,17 @@ if ( ! class_exists( 'WPA_Automation_Editor_Image_Import_Shortcode' ) ) {
 						<div>
 							<h2><?php esc_html_e( 'Fehlende Beitragsbilder importieren', 'wp-automation-editor' ); ?></h2>
 							<p><?php esc_html_e( 'Es werden Beiträge angezeigt, die bereits auf der Zielseite erstellt wurden und bei denen das Beitragsbild noch nicht sicher abgeschlossen ist. Beiträge ohne lokales WordPress-Beitragsbild werden zur Kontrolle angezeigt, können aber nicht importiert werden.', 'wp-automation-editor' ); ?></p>
+							<?php if ( $posts_query->post_count > 0 ) : ?>
+
+								<div class="wpa-import-actions wpa-image-import-reset-actions">
+									<button type="button" class="wpa-button wpa-button-danger" data-wpa-image-import-reset-list>
+										<?php esc_html_e( 'Bildimport-Liste zurücksetzen', 'wp-automation-editor' ); ?>
+									</button>
+
+									<span class="wpa-import-progress" data-wpa-image-import-reset-progress></span>
+								</div>
+
+							<?php endif; ?>
 						</div>
 					</div>
 				</div>
@@ -159,14 +170,19 @@ if ( ! class_exists( 'WPA_Automation_Editor_Image_Import_Shortcode' ) ) {
 				'wpa-automation-image-import',
 				'wpaAutomationImageImport',
 				array(
-					'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
-					'nonce'            => wp_create_nonce( 'wpa_import_featured_image_to_remote' ),
-					'confirmMessage'   => __( 'Ausgewählte Beitragsbilder jetzt nacheinander importieren?', 'wp-automation-editor' ),
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce' => wp_create_nonce( 'wpa_import_featured_image_to_remote' ),
+					'resetNonce' => wp_create_nonce( 'wpa_reset_featured_image_import_list' ),
+					'confirmMessage' => __( 'Ausgewählte Beitragsbilder jetzt nacheinander importieren?', 'wp-automation-editor' ),
+					'resetConfirmMessage' => __( 'Diese Aktion entfernt alle aktuell ausstehenden, fehlgeschlagenen oder übersprungenen Beitragsbild-Importe aus dieser Liste. Lokale Bilder und bereits importierte Bilder auf der Zielseite werden nicht gelöscht. Fortfahren?', 'wp-automation-editor' ),
 					'importingMessage' => __( 'Bildimport läuft...', 'wp-automation-editor' ),
-					'finishedMessage'  => __( 'Bildimport abgeschlossen.', 'wp-automation-editor' ),
-					'errorMessage'     => __( 'Bildimport fehlgeschlagen.', 'wp-automation-editor' ),
-					'stoppedMessage'   => __( 'Bildimport gestoppt, weil die Zielseite überlastet wirkt.', 'wp-automation-editor' ),
-					'delayMs'          => WPA_Automation_Editor_Import_Handler::get_inter_import_delay_ms(),
+					'finishedMessage' => __( 'Bildimport abgeschlossen.', 'wp-automation-editor' ),
+					'errorMessage' => __( 'Bildimport fehlgeschlagen.', 'wp-automation-editor' ),
+					'resettingMessage' => __( 'Bildimport-Liste wird zurückgesetzt...', 'wp-automation-editor' ),
+					'resetErrorMessage' => __( 'Die Bildimport-Liste konnte nicht zurückgesetzt werden.', 'wp-automation-editor' ),
+					'emptyAfterResetMessage' => __( 'Die Bildimport-Liste wurde zurückgesetzt. Es werden keine fehlenden Beitragsbilder mehr angezeigt.', 'wp-automation-editor' ),
+					'stoppedMessage' => __( 'Bildimport gestoppt, weil die Zielseite überlastet wirkt.', 'wp-automation-editor' ),
+					'delayMs' => WPA_Automation_Editor_Import_Handler::get_inter_import_delay_ms(),
 				)
 			);
 		}
@@ -178,6 +194,18 @@ if ( ! class_exists( 'WPA_Automation_Editor_Image_Import_Shortcode' ) ) {
 					'key'     => WPA_Automation_Editor_Import_Handler::META_REMOTE_POST_ID,
 					'value'   => array( '', '0' ),
 					'compare' => 'NOT IN',
+				),
+				array(
+					'relation' => 'OR',
+					array(
+						'key'     => WPA_Automation_Editor_Import_Handler::META_REMOTE_MEDIA_STATUS,
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => WPA_Automation_Editor_Import_Handler::META_REMOTE_MEDIA_STATUS,
+						'value'   => WPA_Automation_Editor_Import_Handler::MEDIA_STATUS_RESET,
+						'compare' => '!=',
+					),
 				),
 				array(
 					'relation' => 'OR',
@@ -204,7 +232,12 @@ if ( ! class_exists( 'WPA_Automation_Editor_Image_Import_Shortcode' ) ) {
 		}
 
 		private function maybe_prepare_missing_image_status( $post_id, $media_status, $has_local_thumbnail ) {
+			if ( WPA_Automation_Editor_Import_Handler::MEDIA_STATUS_RESET === $media_status ) {
+				return $media_status;
+			}
+
 			$remote_media_id = absint( get_post_meta( $post_id, WPA_Automation_Editor_Import_Handler::META_REMOTE_MEDIA_ID, true ) );
+
 			if ( $has_local_thumbnail && ! $remote_media_id && WPA_Automation_Editor_Import_Handler::MEDIA_STATUS_DONE !== $media_status ) {
 				$media_status = WPA_Automation_Editor_Import_Handler::MEDIA_STATUS_PENDING;
 				update_post_meta( $post_id, WPA_Automation_Editor_Import_Handler::META_REMOTE_MEDIA_STATUS, $media_status );
