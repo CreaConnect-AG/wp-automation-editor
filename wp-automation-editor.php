@@ -27,6 +27,7 @@ require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-shor
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-import-handler.php';
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-import-shortcode.php';
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-image-import-shortcode.php';
+require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-planning-calendar-shortcode.php';
 require_once WPA_EDITOR_PLUGIN_PATH . 'includes/class-wpa-automation-editor-plugin.php';
 
 register_activation_hook( WPA_EDITOR_PLUGIN_FILE, array( 'WPA_Automation_Editor_Cleanup_Handler', 'activate' ) );

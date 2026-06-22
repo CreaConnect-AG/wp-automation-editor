@@ -16,6 +16,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Plugin' ) ) {
 		private $import_handler;
 		private $import_shortcode;
 		private $image_import_shortcode;
+		private $planning_calendar_shortcode;
 
 		public function __construct() {
 			$this->assets = new WPA_Automation_Editor_Assets();
@@ -26,11 +27,14 @@ if ( ! class_exists( 'WPA_Automation_Editor_Plugin' ) ) {
 			$this->import_handler = new WPA_Automation_Editor_Import_Handler();
 			$this->import_shortcode = new WPA_Automation_Editor_Import_Shortcode();
 			$this->image_import_shortcode = new WPA_Automation_Editor_Image_Import_Shortcode();
+			$this->planning_calendar_shortcode = new WPA_Automation_Editor_Planning_Calendar_Shortcode();
 
 			add_action( 'wp_enqueue_scripts', array( $this->assets, 'enqueue_assets' ) );
+			add_action( 'wp_enqueue_scripts', array( $this->planning_calendar_shortcode, 'enqueue_assets' ) );
 			add_shortcode( WPA_Automation_Editor_Helpers::get_shortcode_name(), array( $this->shortcode, 'render_shortcode' ) );
 			add_shortcode( WPA_Automation_Editor_Import_Shortcode::SHORTCODE, array( $this->import_shortcode, 'render_shortcode' ) );
 			add_shortcode( WPA_Automation_Editor_Image_Import_Shortcode::SHORTCODE, array( $this->image_import_shortcode, 'render_shortcode' ) );
+			add_shortcode( WPA_Automation_Editor_Planning_Calendar_Shortcode::SHORTCODE, array( $this->planning_calendar_shortcode, 'render_shortcode' ) );
 			add_action( 'admin_post_wpa_save_post', array( $this->post_handler, 'handle_save_post' ) );
 			add_action( 'admin_post_wpa_trash_post', array( $this->post_handler, 'handle_trash_post' ) );
 			add_action( 'wp_ajax_wpa_refresh_post_lock', array( $this->lock_handler, 'refresh_post_lock' ) );

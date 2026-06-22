@@ -1,0 +1,233 @@
+.wpa-plan-calendar {
+	border: 1px solid #d9d9d9;
+	border-radius: 14px;
+	background: #ffffff;
+	padding: 18px;
+	box-shadow: 0 6px 22px rgba(0, 0, 0, 0.06);
+}
+
+.wpa-plan-calendar__header {
+	display: flex;
+	justify-content: space-between;
+	gap: 16px;
+	align-items: flex-start;
+	margin-bottom: 14px;
+}
+
+.wpa-plan-calendar__title {
+	margin: 0;
+	font-size: 20px;
+	line-height: 1.2;
+}
+
+.wpa-plan-calendar__range {
+	margin-top: 4px;
+	font-size: 13px;
+	color: #666666;
+}
+
+.wpa-plan-calendar__legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 16px;
+	font-size: 12px;
+	color: #333333;
+}
+
+.wpa-plan-calendar__legend-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	white-space: nowrap;
+}
+
+.wpa-plan-calendar__legend-color {
+	width: 14px;
+	height: 14px;
+	border-radius: 4px;
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	flex: 0 0 14px;
+}
+
+.wpa-plan-calendar__scroll {
+	overflow-x: auto;
+	padding: 5px;
+}
+
+.wpa-plan-calendar__weekdays,
+.wpa-plan-calendar__grid {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(105px, 1fr));
+	gap: 8px;
+	min-width: 760px;
+}
+
+.wpa-plan-calendar__weekdays {
+	margin-bottom: 8px;
+}
+
+.wpa-plan-calendar__weekdays span {
+	text-align: center;
+	font-size: 12px;
+	font-weight: 700;
+	color: #555555;
+}
+
+.wpa-plan-calendar-day {
+	position: relative;
+	min-height: 128px;
+	border-radius: 12px;
+	background: var(--wpa-plan-day-color);
+	border: 2px solid rgba(0, 0, 0, 0.1);
+	padding: 10px;
+	overflow: hidden;
+	color: #1f1f1f;
+	transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.wpa-plan-calendar-day::before {
+	content: "";
+	position: absolute;
+	inset: 0 0 auto 0;
+	height: 6px;
+	background: var(--wpa-plan-day-color);
+}
+
+.wpa-plan-calendar-day:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+.wpa-plan-calendar-day--empty {
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	pointer-events: none;
+}
+
+.wpa-plan-calendar-day--tuesday {
+	background: #e6e6e6;
+	border-color: var(--wpa-plan-day-color);
+}
+
+.wpa-plan-calendar-day--today {
+	outline: 3px solid #111111;
+	outline-offset: 2px;
+}
+
+.wpa-plan-calendar-day__top {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 8px;
+	position: relative;
+	z-index: 1;
+	margin-top: 2px;
+}
+
+.wpa-plan-calendar-day__weekday {
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.wpa-plan-calendar-day__date {
+	font-size: 19px;
+	font-weight: 800;
+	line-height: 1.1;
+	margin-top: 2px;
+}
+
+.wpa-plan-calendar-day__count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 28px;
+	height: 28px;
+	border-radius: 999px;
+	background: var(--wpa-plan-day-color);
+	border: 1px solid rgba(0, 0, 0, 0.2);
+	font-weight: 800;
+	font-size: 13px;
+}
+
+.wpa-plan-calendar-day__newsletter {
+	display: inline-flex;
+	margin-top: 9px;
+	padding: 3px 7px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.65);
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.wpa-plan-calendar-day__posts {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	margin-top: 9px;
+}
+
+.wpa-plan-calendar-day__post {
+	display: block;
+	padding: 5px 7px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.72);
+	color: #1f1f1f;
+	text-decoration: none;
+	font-size: 12px;
+	line-height: 1.25;
+	overflow: hidden;
+}
+
+.wpa-plan-calendar-day__post:hover {
+	background: rgba(255, 255, 255, 0.9);
+	text-decoration: underline;
+}
+
+.wpa-plan-calendar-day__post-time {
+	font-weight: 800;
+	margin-right: 4px;
+}
+
+.wpa-plan-calendar-day__post-title {
+	display: inline;
+}
+
+.wpa-plan-calendar-day__more,
+.wpa-plan-calendar-day__empty {
+	margin-top: 8px;
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.wpa-plan-calendar-day__empty {
+	display: inline-flex;
+	width: fit-content;
+	padding: 4px 8px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.72);
+}
+
+.wpa-plan-calendar-message {
+	padding: 12px 14px;
+	border-radius: 10px;
+	background: #f5f5f5;
+	border: 1px solid #dddddd;
+}
+
+@media (max-width: 782px) {
+	.wpa-plan-calendar {
+		padding: 14px;
+	}
+
+	.wpa-plan-calendar__title {
+		font-size: 18px;
+	}
+
+	.wpa-plan-calendar__weekdays,
+	.wpa-plan-calendar__grid {
+		grid-template-columns: repeat(7, 105px);
+	}
+}
