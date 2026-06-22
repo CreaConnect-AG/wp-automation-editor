@@ -269,7 +269,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 				$classes[] = 'wpa-plan-calendar-day--tuesday';
 			}
 
-			$visible_posts = array_slice( $posts, 0, 3 );
+			$visible_posts = array_slice( $posts, 0, 4 );
 			$hidden_post_count = max( 0, $post_count - count( $visible_posts ) );
 			$hover_title = $this->get_hover_title( $current_datetime, $posts );
 
