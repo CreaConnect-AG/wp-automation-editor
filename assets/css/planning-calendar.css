@@ -1,6 +1,5 @@
 .wpa-plan-calendar {
 	border: 1px solid #d9d9d9;
-	border-radius: 14px;
 	background: #ffffff;
 	padding: 18px;
 	box-shadow: 0 6px 22px rgba(0, 0, 0, 0.06);
@@ -45,7 +44,6 @@
 .wpa-plan-calendar__legend-color {
 	width: 14px;
 	height: 14px;
-	border-radius: 4px;
 	border: 1px solid rgba(0, 0, 0, 0.15);
 	flex: 0 0 14px;
 }
@@ -77,7 +75,6 @@
 .wpa-plan-calendar-day {
 	position: relative;
 	min-height: 128px;
-	border-radius: 12px;
 	background: var(--wpa-plan-day-color);
 	border: 2px solid rgba(0, 0, 0, 0.1);
 	padding: 10px;
@@ -172,7 +169,6 @@
 .wpa-plan-calendar-day__post {
 	display: block;
 	padding: 5px 7px;
-	border-radius: 8px;
 	background: rgba(255, 255, 255, 0.72);
 	color: #1f1f1f;
 	text-decoration: none;
@@ -212,7 +208,6 @@
 
 .wpa-plan-calendar-message {
 	padding: 12px 14px;
-	border-radius: 10px;
 	background: #f5f5f5;
 	border: 1px solid #dddddd;
 }
@@ -230,4 +225,19 @@
 	.wpa-plan-calendar__grid {
 		grid-template-columns: repeat(7, 105px);
 	}
+}
+
+.wpa-plan-calendar-day--tuesday .wpa-plan-calendar-day__empty, 
+.wpa-plan-calendar-day--tuesday .wpa-plan-calendar-day__count {
+    display: none;
+}
+
+
+.wpa-plan-calendar-day--tuesday {
+    background: #e6e6e6;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.wpa-plan-calendar-day--tuesday::before {
+    display: none;
 }

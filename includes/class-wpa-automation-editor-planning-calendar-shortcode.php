@@ -9,7 +9,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 		const SHORTCODE = 'wpa_planungskalender';
 		const STYLE_HANDLE = 'wpa-planning-calendar';
-		const DAYS_TO_SHOW = 15;
+		const DAYS_TO_SHOW = 14;
 
 		public function enqueue_assets() {
 			if ( ! $this->should_enqueue_assets() ) {
