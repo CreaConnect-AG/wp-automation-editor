@@ -945,7 +945,6 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			}
 
 			$current_user = wp_get_current_user();
-
 			$remote_post_id = 0;
 			$remote_url = '';
 			$message = '';
@@ -999,37 +998,140 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 				$midjourney_prompt_en = sanitize_textarea_field( (string) $midjourney_prompt_en );
 			}
 
+			$newsletter_id = WPA_Automation_Editor_Helpers::get_post_newsletter_id( $post_id );
+			$has_newsletter_id = '' !== $newsletter_id;
+			$newsletter_id_int = $has_newsletter_id ? absint( $newsletter_id ) : 0;
+
+			$remote_publish_date = '';
+			$remote_publish_date_label = '';
+			$remote_publish_time = '';
+			$remote_publish_time_label = '';
+			$remote_publish_datetime = '';
+			$remote_publish_label = '';
+			$has_remote_publish_schedule = false;
+
+			if ( ! $has_newsletter_id ) {
+				$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
+				$remote_publish_date_raw = isset( $remote_publish_schedule['date'] ) ? sanitize_text_field( (string) $remote_publish_schedule['date'] ) : '';
+				$remote_publish_time_raw = isset( $remote_publish_schedule['time'] ) ? sanitize_text_field( (string) $remote_publish_schedule['time'] ) : '';
+				$remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
+
+				if (
+					WPA_Automation_Editor_Helpers::is_valid_remote_publish_date( $remote_publish_date_raw )
+					&& isset( $remote_publish_time_options[ $remote_publish_time_raw ] )
+				) {
+					$remote_publish_date = $remote_publish_date_raw;
+					$remote_publish_time = $remote_publish_time_raw;
+
+					$remote_publish_timestamp = strtotime( $remote_publish_date . ' 00:00:00' );
+
+					if ( false !== $remote_publish_timestamp ) {
+						$remote_publish_date_label = date_i18n( 'd.m.Y', $remote_publish_timestamp );
+					}
+
+					$remote_publish_time_label = wp_strip_all_tags( $remote_publish_time_options[ $remote_publish_time ] );
+					$remote_publish_datetime = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string( $remote_publish_date, $remote_publish_time );
+
+					if ( '' !== $remote_publish_datetime ) {
+						$has_remote_publish_schedule = true;
+					}
+
+					if ( '' !== $remote_publish_date_label && '' !== $remote_publish_time_label ) {
+						$remote_publish_label = sprintf(
+							__( '%1$s um %2$s', 'wp-automation-editor' ),
+							$remote_publish_date_label,
+							$remote_publish_time_label
+						);
+					}
+				}
+			}
+
+			$publication_type = 'none';
+			$publication_label = '';
+			$publication_message = '';
+
+			if ( $has_newsletter_id ) {
+				$publication_type = 'newsletter';
+				$publication_label = sprintf(
+					__( 'immoNewsletter #%s', 'wp-automation-editor' ),
+					$newsletter_id_int
+				);
+				$publication_message = sprintf(
+					__( 'Der Beitrag wird mit dem immoNewsletter #%s veröffentlicht.', 'wp-automation-editor' ),
+					$newsletter_id_int
+				);
+			} elseif ( $has_remote_publish_schedule ) {
+				$publication_type = 'remote_publish';
+				$publication_label = $remote_publish_label;
+
+				if ( $has_featured_image ) {
+					$publication_message = sprintf(
+						__( 'Der Beitrag ist für den %1$s um %2$s vorgeplant auf immo-invest.ch.', 'wp-automation-editor' ),
+						$remote_publish_date_label,
+						$remote_publish_time_label
+					);
+				} else {
+					$publication_message = sprintf(
+						__( 'HANDLUNGSBEDARF: Das Beitragsbild fehlt, der Beitrag soll am %1$s um %2$s vorgeplant werden auf immo-invest.ch.', 'wp-automation-editor' ),
+						$remote_publish_date_label,
+						$remote_publish_time_label
+					);
+				}
+			}
+
+			$publication_label = sanitize_text_field( (string) $publication_label );
+			$publication_message = sanitize_textarea_field( (string) $publication_message );
+
 			$payload = array(
-				'notification_type'           => 'remote_import',
-				'import_successful'           => (bool) $import_successful,
-				'import_status'               => $import_successful ? 'successful' : 'failed',
-				'title'                       => get_the_title( $post_id ),
-				'post_id'                     => $post_id,
-				'post_url'                    => get_permalink( $post_id ),
-				'edit_url'                    => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
-				'author'                      => $current_user && $current_user->exists() ? $current_user->display_name : '',
-				'imported_at'                 => current_time( 'mysql' ),
-				'remote_post_id'              => $remote_post_id,
-				'remote_url'                  => $remote_url,
-				'message'                     => $message,
-				'status_code'                 => $status_code,
-				'stop_queue'                  => $stop_queue,
-				'has_featured_image'          => $has_featured_image,
-				'featured_image_status'       => $featured_image_status,
+				'notification_type' => 'remote_import',
+				'import_successful' => (bool) $import_successful,
+				'import_status' => $import_successful ? 'successful' : 'failed',
+				'title' => get_the_title( $post_id ),
+				'post_id' => $post_id,
+				'post_url' => get_permalink( $post_id ),
+				'edit_url' => WPA_Automation_Editor_Helpers::get_edit_url( $post_id ),
+				'author' => $current_user && $current_user->exists() ? $current_user->display_name : '',
+				'imported_at' => current_time( 'mysql' ),
+				'remote_post_id' => $remote_post_id,
+				'remote_url' => $remote_url,
+				'message' => $message,
+				'status_code' => $status_code,
+				'stop_queue' => $stop_queue,
+				'has_featured_image' => $has_featured_image,
+				'featured_image_status' => $featured_image_status,
 				'featured_image_status_label' => $featured_image_status_label,
-				'remote_media_status'         => $remote_media_status,
-				'remote_media_error'          => $remote_media_error,
-				'midjourney_prompt_en'        => $midjourney_prompt_en,
+				'remote_media_status' => $remote_media_status,
+				'remote_media_error' => $remote_media_error,
+				'newsletter_id' => $newsletter_id_int,
+				'has_newsletter_id' => $has_newsletter_id,
+				'has_remote_publish_schedule' => $has_remote_publish_schedule,
+				'publication_type' => $publication_type,
+				'publication_label' => $publication_label,
+				'publication_message' => $publication_message,
+				'wpa_remote_publish_date' => $remote_publish_date,
+				'wpa_remote_publish_date_label' => $remote_publish_date_label,
+				'wpa_remote_publish_time' => $remote_publish_time,
+				'wpa_remote_publish_time_label' => $remote_publish_time_label,
+				'wpa_remote_publish_datetime' => $remote_publish_datetime,
+				'wpa_remote_publish_label' => $remote_publish_label,
+				'midjourney_prompt_en' => $midjourney_prompt_en,
 			);
+
+			$payload_json = wp_json_encode( $payload );
+
+			if ( false === $payload_json ) {
+				$this->log_message( 'Import Teams notification payload JSON encoding failed for local post ' . absint( $post_id ) );
+				return;
+			}
 
 			$response = wp_remote_post(
 				$webhook_url,
 				array(
 					'timeout' => 10,
 					'headers' => array(
-						'Content-Type' => 'application/json',
+						'Content-Type' => 'application/json; charset=utf-8',
 					),
-					'body' => wp_json_encode( $payload ),
+					'body' => $payload_json,
 				)
 			);
 
