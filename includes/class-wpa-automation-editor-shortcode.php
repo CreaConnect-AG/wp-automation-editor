@@ -560,17 +560,25 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
 
                         <div class="wpa-form-grid">
                             <div class="wpa-form-row">
+
                                 <label for="wpa_post_categories"><?php esc_html_e( 'Kategorien', 'wp-automation-editor' ); ?></label>
-
                                 <select id="wpa_post_categories" name="post_categories[]" multiple class="wpa-categories-select">
-                                    <?php foreach ( $all_categories as $category ) : ?>
-                                        <option value="<?php echo esc_attr( $category->term_id ); ?>" <?php selected( in_array( (int) $category->term_id, $selected_category_ids, true ) ); ?>>
-                                            <?php echo esc_html( $category->name ); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
 
-                                <p class="wpa-help-text"><?php esc_html_e( 'Mehrere Kategorien können ausgewählt werden.', 'wp-automation-editor' ); ?></p>
+                                    <?php foreach ( $all_categories as $category ) : ?>
+
+                                        <option value="<?php echo esc_attr( $category->term_id ); ?>" <?php selected( in_array( (int) $category->term_id, $selected_category_ids, true ) ); ?>>
+
+                                            <?php echo esc_html( $category->name ); ?>
+
+                                        </option>
+
+                                    <?php endforeach; ?>
+
+                                </select>
+                                <p class="wpa-help-text">
+                                    <?php esc_html_e( 'Mehrere Kategorien können ausgewählt werden. immo!nvest+ auswählen, falls der Beitrag auf immo-invest.ch gesperrt sein soll.', 'wp-automation-editor' ); ?>
+                                </p>
+
                             </div>
 
                             <div class="wpa-form-row">
