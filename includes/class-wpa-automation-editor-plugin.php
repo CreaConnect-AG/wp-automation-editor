@@ -37,6 +37,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Plugin' ) ) {
 			add_shortcode( WPA_Automation_Editor_Planning_Calendar_Shortcode::SHORTCODE, array( $this->planning_calendar_shortcode, 'render_shortcode' ) );
 			add_action( 'admin_post_wpa_save_post', array( $this->post_handler, 'handle_save_post' ) );
 			add_action( 'admin_post_wpa_trash_post', array( $this->post_handler, 'handle_trash_post' ) );
+			add_action( 'admin_post_wpa_prepare_import_edit', array( $this->import_shortcode, 'handle_prepare_edit_post' ) );
 			add_action( 'wp_ajax_wpa_refresh_post_lock', array( $this->lock_handler, 'refresh_post_lock' ) );
 			add_action( 'wp_ajax_wpa_get_remote_publish_occupied_times', array( $this->post_handler, 'handle_get_remote_publish_occupied_times' ) );
 			add_action( 'wp_ajax_wpa_import_post_to_remote', array( $this->import_handler, 'handle_import_post' ) );

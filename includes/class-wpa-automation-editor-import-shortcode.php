@@ -138,6 +138,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 													<?php endif; ?>
 												</button>
 
+												<?php echo $this->render_prepare_edit_post_form( $post_id ); ?>
+
 												<?php echo WPA_Automation_Editor_Helpers::render_trash_post_form( $post_id, $redirect_url ); ?>
 											</td>
 										</tr>
@@ -156,6 +158,89 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 			<?php
 			wp_reset_postdata();
 			return ob_get_clean();
+		}
+
+		public function handle_prepare_edit_post() {
+			if ( ! is_user_logged_in() ) {
+				wp_die( esc_html__( 'Bitte zuerst einloggen.', 'wp-automation-editor' ) );
+			}
+
+			$post_id = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
+
+			if ( ! $post_id ) {
+				wp_die( esc_html__( 'Der Beitrag wurde nicht gefunden.', 'wp-automation-editor' ) );
+			}
+
+			$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+
+			if ( ! wp_verify_nonce( $nonce, 'wpa_prepare_import_edit_' . $post_id ) ) {
+				wp_die( esc_html__( 'Die Sicherheitsprüfung ist fehlgeschlagen. Bitte versuche es erneut.', 'wp-automation-editor' ) );
+			}
+
+			$post = get_post( $post_id );
+
+			if ( ! $post || 'post' !== $post->post_type ) {
+				wp_die( esc_html__( 'Der Beitrag wurde nicht gefunden.', 'wp-automation-editor' ) );
+			}
+
+			if ( ! current_user_can( 'edit_post', $post_id ) ) {
+				wp_die( esc_html__( 'Du darfst diesen Beitrag nicht bearbeiten.', 'wp-automation-editor' ) );
+			}
+
+			$author_id = WPA_Automation_Editor_Helpers::get_automation_author_id();
+
+			if ( ! $author_id || (int) $post->post_author !== (int) $author_id ) {
+				wp_die( esc_html__( 'Dieser Beitrag gehört nicht zum Automatisierungs-Workflow.', 'wp-automation-editor' ) );
+			}
+
+			$this->update_post_workflow_status_to_draft( $post_id );
+
+			wp_safe_redirect( $this->get_overview_edit_url( $post_id ) );
+			exit;
+		}
+
+		private function update_post_workflow_status_to_draft( $post_id ) {
+			$workflow_status = 'in_bearbeitung';
+
+			if ( function_exists( 'update_field' ) ) {
+				update_field( WPA_Automation_Editor_Helpers::META_WORKFLOW_STATUS, $workflow_status, $post_id );
+			}
+
+			update_post_meta( $post_id, WPA_Automation_Editor_Helpers::META_WORKFLOW_STATUS, $workflow_status );
+		}
+
+		private function render_prepare_edit_post_form( $post_id ) {
+			$post_id = absint( $post_id );
+
+			if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+				return '';
+			}
+
+			ob_start();
+			?>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wpa-inline-action-form">
+				<input type="hidden" name="action" value="wpa_prepare_import_edit">
+				<input type="hidden" name="post_id" value="<?php echo esc_attr( $post_id ); ?>">
+				<?php wp_nonce_field( 'wpa_prepare_import_edit_' . $post_id ); ?>
+
+				<button type="submit" class="wpa-button wpa-icon-button" title="<?php esc_attr_e( 'Als Entwurf bearbeiten', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'Als Entwurf bearbeiten', 'wp-automation-editor' ); ?>">
+					<span class="dashicons dashicons-edit" aria-hidden="true"></span>
+					<span class="wpa-screen-reader-text"><?php esc_html_e( 'Als Entwurf bearbeiten', 'wp-automation-editor' ); ?></span>
+				</button>
+			</form>
+			<?php
+
+			return ob_get_clean();
+		}
+
+		private function get_overview_edit_url( $post_id ) {
+			return add_query_arg(
+				array(
+					'wpa_action' => 'edit',
+					'post_id'    => absint( $post_id ),
+				),
+				home_url( '/uebersicht/' )
+			);
 		}
 
 		private function get_import_publish_information( $post_id ) {
