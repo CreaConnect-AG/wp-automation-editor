@@ -84,6 +84,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 										<th><input type="checkbox" data-wpa-import-check-all></th>
 										<th><?php esc_html_e( 'Titel', 'wp-automation-editor' ); ?></th>
 										<th><?php esc_html_e( 'Datum', 'wp-automation-editor' ); ?></th>
+										<th><?php esc_html_e( 'Veröffentlichung / Newsletter', 'wp-automation-editor' ); ?></th>
 										<th><?php esc_html_e( 'Beitragsbild', 'wp-automation-editor' ); ?></th>
 										<th><?php esc_html_e( 'Importstatus', 'wp-automation-editor' ); ?></th>
 										<th><?php esc_html_e( 'Aktion', 'wp-automation-editor' ); ?></th>
@@ -96,6 +97,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 										$remote_post_id = absint( get_post_meta( $post_id, WPA_Automation_Editor_Import_Handler::META_REMOTE_POST_ID, true ) );
 										$pending_remote_post_id = absint( get_post_meta( $post_id, WPA_Automation_Editor_Import_Handler::META_PENDING_REMOTE_POST_ID, true ) );
 										$last_import_error = get_post_meta( $post_id, WPA_Automation_Editor_Import_Handler::META_LAST_IMPORT_ERROR, true );
+										$import_publish_information = $this->get_import_publish_information( $post_id );
 										$remote_link = $remote_post_id ? WPA_Automation_Editor_Import_Handler::get_remote_post_url( $remote_post_id ) : '';
 										
 										$redirect_url = add_query_arg(
@@ -111,6 +113,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 												<div class="wpa-post-meta-line"><?php echo esc_html( wp_trim_words( wp_strip_all_tags( get_the_excerpt() ), 16 ) ); ?></div>
 											</td>
 											<td><?php echo esc_html( get_the_date( 'd.m.Y H:i', $post_id ) ); ?></td>
+											<td><?php echo '' !== $import_publish_information ? esc_html( $import_publish_information ) : '&mdash;'; ?></td>
 											<td><?php echo has_post_thumbnail( $post_id ) ? esc_html__( 'Ja', 'wp-automation-editor' ) : esc_html__( 'Nein', 'wp-automation-editor' ); ?></td>
 											<td data-wpa-import-status>
 												<?php if ( $remote_post_id ) : ?>
@@ -153,6 +156,69 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Shortcode' ) ) {
 			<?php
 			wp_reset_postdata();
 			return ob_get_clean();
+		}
+
+		private function get_import_publish_information( $post_id ) {
+			$information_parts = array();
+
+			$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
+			$remote_publish_date = $this->format_remote_publish_date_for_table( $remote_publish_schedule['date'] );
+			$remote_publish_time = $this->format_remote_publish_time_for_table( $remote_publish_schedule['time'] );
+
+			if ( '' !== $remote_publish_date && '' !== $remote_publish_time ) {
+				$information_parts[] = sprintf(
+					__( '%1$s, %2$s', 'wp-automation-editor' ),
+					$remote_publish_date,
+					$remote_publish_time
+				);
+			}
+
+			$newsletter_id = WPA_Automation_Editor_Helpers::get_post_newsletter_id( $post_id );
+
+			if ( '' !== $newsletter_id ) {
+				$information_parts[] = sprintf(
+					__( 'immoNewsletter #%s', 'wp-automation-editor' ),
+					$newsletter_id
+				);
+			}
+
+			return implode( ' | ', $information_parts );
+		}
+
+		private function format_remote_publish_date_for_table( $remote_publish_date ) {
+			$remote_publish_date = is_string( $remote_publish_date ) ? trim( $remote_publish_date ) : '';
+
+			if ( '' === $remote_publish_date || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $remote_publish_date ) ) {
+				return '';
+			}
+
+			$timestamp = strtotime( $remote_publish_date . ' 00:00:00' );
+
+			if ( false === $timestamp ) {
+				return '';
+			}
+
+			return date_i18n( get_option( 'date_format' ), $timestamp );
+		}
+
+		private function format_remote_publish_time_for_table( $remote_publish_time ) {
+			$remote_publish_time = is_string( $remote_publish_time ) ? sanitize_text_field( $remote_publish_time ) : '';
+
+			if ( '' === $remote_publish_time ) {
+				return '';
+			}
+
+			$time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
+
+			if ( isset( $time_options[ $remote_publish_time ] ) ) {
+				return wp_strip_all_tags( $time_options[ $remote_publish_time ] );
+			}
+
+			if ( preg_match( '/^\d{2}:\d{2}$/', $remote_publish_time ) ) {
+				return $remote_publish_time . ' Uhr';
+			}
+
+			return '';
 		}
 
 		private function enqueue_assets() {
