@@ -454,7 +454,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                     </select>
 
                                     <p class="wpa-help-text">
-                                        <?php esc_html_e( 'Erlaubte Zeiten: 09:00, 11:00, 14:00, 16:00 Uhr oder 19:00 Uhr.', 'wp-automation-editor' ); ?>
+                                        <?php esc_html_e( 'Erlaubte Zeiten: 07:30, 09:00, 10:00, 11:00, 12:30, 14:00, 15:00, 16:00, 17:30 Uhr oder 19:00 Uhr.', 'wp-automation-editor' ); ?>
                                     </p>
                                 </div>
                             </div>
