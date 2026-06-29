@@ -241,3 +241,34 @@
 .wpa-plan-calendar-day--tuesday::before {
     display: none;
 }
+
+.wpa-plan-calendar-day__post {
+	position: relative;
+}
+
+.wpa-plan-calendar-day__post--remote-overlay {
+	padding-top: 22px;
+}
+
+.wpa-plan-calendar-day__post-overlay {
+	position: absolute;
+	top: 4px;
+	right: 5px;
+	left: 5px;
+	display: block;
+	padding: 2px 5px;
+	background: rgba(0, 0, 0, 0.72);
+	color: #ffffff;
+	font-size: 10px;
+	font-weight: 800;
+	line-height: 1.1;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
+}
+
+.wpa-plan-calendar-day__post-newsletter-id {
+	font-weight: 900;
+}
