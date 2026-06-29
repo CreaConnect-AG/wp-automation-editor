@@ -445,3 +445,8 @@ input#wpa_remote_publish_date {
 	border-color: #00939e;
 	background: #e9fbfd;
 }
+
+.wpa-newsletter-publish-validation-message {
+	color: #b32d2e;
+	font-weight: 700;
+}

@@ -26,11 +26,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function updatePublishTypeFields() {
             const selectedPublishType = getSelectedPublishType();
-            const isNewsletter = selectedPublishType === 'newsletter';
-            const isImmoNews = selectedPublishType === 'immonews';
+            const isNewsletter = selectedPublishType === 'newsletter' || selectedPublishType === 'newsletter_immonews';
+            const isImmoNews = selectedPublishType === 'immonews' || selectedPublishType === 'newsletter_immonews';
 
             publishTypePanels.forEach(function (panelElement) {
-                panelElement.hidden = panelElement.dataset.wpaPublishPanel !== selectedPublishType;
+                const panelType = panelElement.dataset.wpaPublishPanel;
+
+                panelElement.hidden = !(
+                    (panelType === 'newsletter' && isNewsletter) ||
+                    (panelType === 'immonews' && isImmoNews)
+                );
             });
 
             if (newsletterIdField) {
@@ -234,6 +239,113 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     initRemotePublishSlots();
+
+    function initNewsletterRemotePublishValidation() {
+        if (!editForm || !window.wpaAutomationEditor) {
+            return;
+        }
+
+        const newsletterIdField = editForm.querySelector('#wpa_newsletter_id');
+        const remotePublishDateField = editForm.querySelector('#wpa_remote_publish_date');
+        const remotePublishTimeField = editForm.querySelector('#wpa_remote_publish_time');
+
+        if (!newsletterIdField || !remotePublishDateField || !remotePublishTimeField) {
+            return;
+        }
+
+        function getSelectedPublishType() {
+            const selectedRadio = editForm.querySelector('input[name="remote_publish_type"]:checked');
+
+            return selectedRadio ? selectedRadio.value : 'newsletter';
+        }
+
+        function removeValidationMessage() {
+            const messageElement = editForm.querySelector('.wpa-newsletter-publish-validation-message');
+
+            if (messageElement) {
+                messageElement.remove();
+            }
+        }
+
+        function showValidationMessage(messageText) {
+            removeValidationMessage();
+
+            const messageElement = document.createElement('p');
+            messageElement.className = 'wpa-help-text wpa-newsletter-publish-validation-message';
+            messageElement.textContent = messageText;
+
+            remotePublishDateField.parentNode.appendChild(messageElement);
+        }
+
+        function clearValidation() {
+            newsletterIdField.setCustomValidity('');
+            remotePublishDateField.setCustomValidity('');
+            remotePublishTimeField.setCustomValidity('');
+            removeValidationMessage();
+        }
+
+        function validateNewsletterRemotePublish() {
+            clearValidation();
+
+            if (getSelectedPublishType() !== 'newsletter_immonews') {
+                return true;
+            }
+
+            const newsletterId = String(parseInt(newsletterIdField.value || '0', 10));
+            const newsletterSchedule = window.wpaAutomationEditor.newsletterScheduleById || {};
+            const newsletterDate = newsletterSchedule[newsletterId] || '';
+            const remotePublishDate = remotePublishDateField.value;
+            const remotePublishTime = remotePublishTimeField.value;
+
+            if (!newsletterDate) {
+                const messageText = window.wpaAutomationEditor.newsletterUnknownText || 'Diese Newsletter ID ist nicht in der Newsletter-Planung (newsletter-schedule.json) hinterlegt.';
+
+                newsletterIdField.setCustomValidity(messageText);
+                showValidationMessage(messageText);
+
+                return false;
+            }
+
+            if (!remotePublishDate || !remotePublishTime) {
+                return true;
+            }
+
+            if (remotePublishDate > newsletterDate) {
+                const messageText = 'Die ausgewählte Newsletter ID #' + newsletterId + ' (Newsletterdatum: ' + newsletterDate + ') liegt vor dem Veröffentlichungsdatum ' + remotePublishDate + '. Plane den Beitrag vor oder am Newsletter-Tag vor 15:00 Uhr.';
+
+                remotePublishDateField.setCustomValidity(messageText);
+                remotePublishTimeField.setCustomValidity(messageText);
+                showValidationMessage(messageText);
+
+                return false;
+            }
+
+            if (remotePublishDate === newsletterDate && remotePublishTime >= '15:00') {
+                const messageText = 'Am Newsletter-Tag muss die Veröffentlichung auf immo-invest.ch vor 15:00 Uhr eingeplant sein.';
+
+                remotePublishDateField.setCustomValidity(messageText);
+                remotePublishTimeField.setCustomValidity(messageText);
+                showValidationMessage(messageText);
+
+                return false;
+            }
+
+            return true;
+        }
+
+        [newsletterIdField, remotePublishDateField, remotePublishTimeField].forEach(function (fieldElement) {
+            fieldElement.addEventListener('input', validateNewsletterRemotePublish);
+            fieldElement.addEventListener('change', validateNewsletterRemotePublish);
+        });
+
+        editForm.addEventListener('submit', function (event) {
+            if (!validateNewsletterRemotePublish()) {
+                event.preventDefault();
+            }
+        });
+
+        validateNewsletterRemotePublish();
+    }
 
     if (categorySelectField && typeof TomSelect !== 'undefined') {
         new TomSelect(categorySelectField, {

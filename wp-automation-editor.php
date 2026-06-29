@@ -4,7 +4,7 @@
  * Plugin Name: WP Automation Frontend Editor
  * Plugin URI: https://creaconnect.ch/
  * Description: Frontend-Übersicht und Bearbeitung für Beiträge vom Autor wp-automation.
- * Version: 1.4.1
+ * Version: 1.4.5
  * Author: CreaConnect
  * Text Domain: wp-automation-editor
  */
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPA_EDITOR_PLUGIN_VERSION', '1.4.2' );
+define( 'WPA_EDITOR_PLUGIN_VERSION', '1.4.5' );
 define( 'WPA_EDITOR_PLUGIN_FILE', __FILE__ );
 define( 'WPA_EDITOR_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WPA_EDITOR_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

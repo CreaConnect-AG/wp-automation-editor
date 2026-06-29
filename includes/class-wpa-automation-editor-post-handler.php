@@ -60,19 +60,22 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 ? sanitize_key( wp_unslash( $_POST['remote_publish_type'] ) )
                 : 'newsletter';
 
-            if ( ! in_array( $remote_publish_type, array( 'newsletter', 'immonews' ), true ) ) {
+            if ( ! in_array( $remote_publish_type, array( 'newsletter', 'immonews', 'newsletter_immonews' ), true ) ) {
                 $remote_publish_type = 'newsletter';
             }
 
-            $newsletter_id = 'newsletter' === $remote_publish_type && isset( $_POST['newsletter_id'] ) && '' !== wp_unslash( $_POST['newsletter_id'] )
+            $uses_newsletter = in_array( $remote_publish_type, array( 'newsletter', 'newsletter_immonews' ), true );
+            $uses_remote_publish = in_array( $remote_publish_type, array( 'immonews', 'newsletter_immonews' ), true );
+
+            $newsletter_id = $uses_newsletter && isset( $_POST['newsletter_id'] ) && '' !== wp_unslash( $_POST['newsletter_id'] )
                 ? absint( wp_unslash( $_POST['newsletter_id'] ) )
                 : '';
 
-            $remote_publish_date = 'immonews' === $remote_publish_type && isset( $_POST['remote_publish_date'] )
+            $remote_publish_date = $uses_remote_publish && isset( $_POST['remote_publish_date'] )
                 ? sanitize_text_field( wp_unslash( $_POST['remote_publish_date'] ) )
                 : '';
 
-            $remote_publish_time = 'immonews' === $remote_publish_type && isset( $_POST['remote_publish_time'] )
+            $remote_publish_time = $uses_remote_publish && isset( $_POST['remote_publish_time'] )
                 ? sanitize_text_field( wp_unslash( $_POST['remote_publish_time'] ) )
                 : '';
 
@@ -80,28 +83,59 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             $has_remote_publish_time = '' !== $remote_publish_time;
             $has_remote_publish_schedule = $has_remote_publish_date || $has_remote_publish_time;
 
-            if ( '' !== $newsletter_id && $has_remote_publish_schedule ) {
-                wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_conflict', $redirect_url ) );
+            if ( $uses_newsletter && '' === $newsletter_id ) {
+                wp_safe_redirect( add_query_arg( 'wpa_notice', 'newsletter_unknown', $redirect_url ) );
                 exit;
             }
 
-            if ( '' === $newsletter_id && $has_remote_publish_schedule && ( ! $has_remote_publish_date || ! $has_remote_publish_time ) ) {
+            if ( $uses_remote_publish && ( ! $has_remote_publish_date || ! $has_remote_publish_time ) ) {
                 wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_incomplete', $redirect_url ) );
                 exit;
             }
 
-            if ( '' === $newsletter_id && $has_remote_publish_schedule ) {
+            if ( $uses_remote_publish ) {
                 $remote_publish_datetime_string = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string( $remote_publish_date, $remote_publish_time );
 
                 if ( '' === $remote_publish_datetime_string ) {
                     wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_invalid', $redirect_url ) );
                     exit;
                 }
-            }
 
-            if ( '' === $newsletter_id && $has_remote_publish_date && $has_remote_publish_time ) {
                 if ( WPA_Automation_Editor_Helpers::is_remote_publish_slot_taken( $remote_publish_date, $remote_publish_time, $post_id ) ) {
                     wp_safe_redirect( add_query_arg( 'wpa_notice', 'schedule_slot_taken', $redirect_url ) );
+                    exit;
+                }
+            }
+
+            if ( 'newsletter_immonews' === $remote_publish_type ) {
+                $newsletter_schedule_validation = WPA_Automation_Editor_Helpers::validate_newsletter_remote_publish_schedule(
+                    $newsletter_id,
+                    $remote_publish_date,
+                    $remote_publish_time
+                );
+
+                if ( is_wp_error( $newsletter_schedule_validation ) ) {
+                    $error_data = $newsletter_schedule_validation->get_error_data();
+
+                    $notice_query_args = array(
+                        'wpa_notice' => $newsletter_schedule_validation->get_error_code(),
+                    );
+
+                    if ( is_array( $error_data ) ) {
+                        if ( isset( $error_data['newsletter_id'] ) ) {
+                            $notice_query_args['wpa_newsletter_id'] = absint( $error_data['newsletter_id'] );
+                        }
+
+                        if ( isset( $error_data['newsletter_date'] ) ) {
+                            $notice_query_args['wpa_newsletter_date'] = sanitize_text_field( $error_data['newsletter_date'] );
+                        }
+
+                        if ( isset( $error_data['remote_publish_date'] ) ) {
+                            $notice_query_args['wpa_remote_publish_date'] = sanitize_text_field( $error_data['remote_publish_date'] );
+                        }
+                    }
+
+                    wp_safe_redirect( add_query_arg( $notice_query_args, $redirect_url ) );
                     exit;
                 }
             }
@@ -188,9 +222,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
             }
 
-            if ( '' !== $newsletter_id ) {
-                WPA_Automation_Editor_Helpers::clear_post_remote_publish_schedule( $post_id );
-            } elseif ( $has_remote_publish_date && $has_remote_publish_time ) {
+            if ( $has_remote_publish_date && $has_remote_publish_time ) {
                 WPA_Automation_Editor_Helpers::update_post_remote_publish_schedule( $post_id, $remote_publish_date, $remote_publish_time );
             } else {
                 WPA_Automation_Editor_Helpers::clear_post_remote_publish_schedule( $post_id );

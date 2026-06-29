@@ -20,6 +20,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
         const DEFAULT_AUTHOR_LOGIN = 'wp-automation';
         const POSTS_PER_PAGE = 20;
 		const CLEANUP_CRON_HOOK = 'wpa_automation_editor_cleanup_old_unbearbeitet_posts';
+        const NEWSLETTER_SCHEDULE_FILE = 'data/newsletter-schedule.json';
 
         public static function get_shortcode_name() {
             return self::SHORTCODE;
@@ -701,6 +702,157 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
             return $user->display_name;
         }
 
+        public static function get_newsletter_schedule() {
+            static $newsletter_schedule = null;
+
+            if ( null !== $newsletter_schedule ) {
+                return $newsletter_schedule;
+            }
+
+            $newsletter_schedule = array();
+            $file_path = WPA_EDITOR_PLUGIN_PATH . self::NEWSLETTER_SCHEDULE_FILE;
+
+            if ( ! file_exists( $file_path ) || ! is_readable( $file_path ) ) {
+                return $newsletter_schedule;
+            }
+
+            $file_content = file_get_contents( $file_path );
+
+            if ( false === $file_content ) {
+                return $newsletter_schedule;
+            }
+
+            $schedule_data = json_decode( $file_content, true );
+
+            if ( ! is_array( $schedule_data ) || empty( $schedule_data['newsletters'] ) || ! is_array( $schedule_data['newsletters'] ) ) {
+                return $newsletter_schedule;
+            }
+
+            foreach ( $schedule_data['newsletters'] as $date_key => $newsletter_id ) {
+                $date_key = sanitize_text_field( $date_key );
+                $newsletter_id = absint( $newsletter_id );
+
+                if ( ! self::is_valid_remote_publish_date( $date_key ) || $newsletter_id <= 0 ) {
+                    continue;
+                }
+
+                $newsletter_schedule[ $date_key ] = (string) $newsletter_id;
+            }
+
+            ksort( $newsletter_schedule );
+
+            return $newsletter_schedule;
+        }
+
+        public static function get_newsletter_schedule_by_id() {
+            $newsletter_schedule = self::get_newsletter_schedule();
+            $newsletter_schedule_by_id = array();
+
+            foreach ( $newsletter_schedule as $newsletter_date => $newsletter_id ) {
+                $newsletter_schedule_by_id[ $newsletter_id ] = $newsletter_date;
+            }
+
+            return $newsletter_schedule_by_id;
+        }
+
+        public static function get_newsletter_date_by_id( $newsletter_id ) {
+            $newsletter_id = absint( $newsletter_id );
+
+            if ( $newsletter_id <= 0 ) {
+                return '';
+            }
+
+            $newsletter_schedule_by_id = self::get_newsletter_schedule_by_id();
+            $newsletter_id = (string) $newsletter_id;
+
+            return isset( $newsletter_schedule_by_id[ $newsletter_id ] ) ? $newsletter_schedule_by_id[ $newsletter_id ] : '';
+        }
+
+        public static function get_next_newsletter() {
+            $today = wp_date( 'Y-m-d' );
+            $newsletter_schedule = self::get_newsletter_schedule();
+
+            foreach ( $newsletter_schedule as $newsletter_date => $newsletter_id ) {
+                if ( $newsletter_date >= $today ) {
+                    return array(
+                        'date' => $newsletter_date,
+                        'newsletter_id' => $newsletter_id,
+                        'formatted_date' => self::format_remote_publish_date_for_notification( $newsletter_date ),
+                    );
+                }
+            }
+
+            return array();
+        }
+
+        public static function validate_newsletter_remote_publish_schedule( $newsletter_id, $remote_publish_date, $remote_publish_time ) {
+            $newsletter_id = absint( $newsletter_id );
+            $remote_publish_date = self::normalize_remote_publish_date_for_input( $remote_publish_date );
+            $remote_publish_time = sanitize_text_field( $remote_publish_time );
+
+            if ( $newsletter_id <= 0 ) {
+                return new WP_Error(
+                    'newsletter_missing',
+                    __( 'Bitte eine Newsletter ID angeben.', 'wp-automation-editor' )
+                );
+            }
+
+            $newsletter_date = self::get_newsletter_date_by_id( $newsletter_id );
+
+            if ( '' === $newsletter_date ) {
+                return new WP_Error(
+                    'newsletter_unknown',
+                    __( 'Diese Newsletter ID ist nicht in der Newsletter-Planung (newsletter-schedule.json) hinterlegt.', 'wp-automation-editor' )
+                );
+            }
+
+            if ( ! self::is_valid_remote_publish_date( $remote_publish_date ) ) {
+                return new WP_Error(
+                    'newsletter_schedule_invalid',
+                    __( 'Das Veröffentlichungsdatum ist ungültig.', 'wp-automation-editor' ),
+                    array(
+                        'newsletter_date' => $newsletter_date,
+                    )
+                );
+            }
+
+            if ( ! isset( self::get_remote_publish_time_options()[ $remote_publish_time ] ) ) {
+                return new WP_Error(
+                    'newsletter_schedule_invalid',
+                    __( 'Die Veröffentlichungszeit ist ungültig.', 'wp-automation-editor' ),
+                    array(
+                        'newsletter_date' => $newsletter_date,
+                    )
+                );
+            }
+
+            if ( $remote_publish_date > $newsletter_date ) {
+                return new WP_Error(
+                    'newsletter_schedule_after_newsletter',
+                    __( 'Die Veröffentlichung liegt nach dem Newsletter-Datum.', 'wp-automation-editor' ),
+                    array(
+                        'newsletter_id' => $newsletter_id,
+                        'newsletter_date' => $newsletter_date,
+                        'remote_publish_date' => $remote_publish_date,
+                    )
+                );
+            }
+
+            if ( $remote_publish_date === $newsletter_date && $remote_publish_time >= '15:00' ) {
+                return new WP_Error(
+                    'newsletter_schedule_after_cutoff',
+                    __( 'Die Veröffentlichung am Newsletter-Tag muss vor 15:00 Uhr geplant sein.', 'wp-automation-editor' ),
+                    array(
+                        'newsletter_id' => $newsletter_id,
+                        'newsletter_date' => $newsletter_date,
+                        'remote_publish_date' => $remote_publish_date,
+                    )
+                );
+            }
+
+            return true;
+        }
+
         public static function render_message( $message, $type = 'info' ) {
             return sprintf(
                 '<div class="wpa-notice wpa-notice-%1$s">%2$s</div>',
@@ -715,6 +867,33 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
             }
 
             $notice_key = sanitize_key( wp_unslash( $_GET['wpa_notice'] ) );
+
+            if ( 0 === strpos( $notice_key, 'wpa_' ) ) {
+                $notice_key = substr( $notice_key, 4 );
+            }
+
+            if ( 'newsletter_schedule_after_newsletter' === $notice_key ) {
+                $newsletter_id = isset( $_GET['wpa_newsletter_id'] ) ? absint( wp_unslash( $_GET['wpa_newsletter_id'] ) ) : 0;
+                $newsletter_date = isset( $_GET['wpa_newsletter_date'] ) ? sanitize_text_field( wp_unslash( $_GET['wpa_newsletter_date'] ) ) : '';
+                $remote_publish_date = isset( $_GET['wpa_remote_publish_date'] ) ? sanitize_text_field( wp_unslash( $_GET['wpa_remote_publish_date'] ) ) : '';
+
+                $formatted_newsletter_date = self::format_remote_publish_date_for_notification( $newsletter_date );
+                $formatted_remote_publish_date = self::format_remote_publish_date_for_notification( $remote_publish_date );
+
+                if ( $newsletter_id > 0 && '' !== $formatted_newsletter_date && '' !== $formatted_remote_publish_date ) {
+                    return sprintf(
+                        '<div class="wpa-notice wpa-notice-error">%s</div>',
+                        esc_html(
+                            sprintf(
+                                __( 'Die ausgewählte Newsletter ID #%1$d (Newsletterdatum: %2$s) liegt vor dem Veröffentlichungsdatum %3$s. Plane den Beitrag vor oder am Newsletter-Tag vor 15:00 Uhr.', 'wp-automation-editor' ),
+                                $newsletter_id,
+                                $formatted_newsletter_date,
+                                $formatted_remote_publish_date
+                            )
+                        )
+                    );
+                }
+            }
 
             $notices = array(
                 'saved' => array(
@@ -753,8 +932,36 @@ if ( ! class_exists( 'WPA_Automation_Editor_Helpers' ) ) {
                     'message' => __( 'Der Beitrag konnte nicht in den Papierkorb verschoben werden.', 'wp-automation-editor' ),
                     'type'    => 'error',
                 ),
-                'schedule_conflict' => array(
-                    'message' => __( 'Bitte entweder eine Newsletter ID oder ein Veröffentlichungsdatum mit Uhrzeit setzen, nicht beides.', 'wp-automation-editor' ),
+                'newsletter_unknown' => array(
+                    'message' => __( 'Diese Newsletter ID ist nicht in der Newsletter-Planung (newsletter-schedule.json) hinterlegt.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'newsletter_schedule_after_newsletter' => array(
+                    'message' => __( 'Wähle ein Veröffentlichungsdatum vor dem Newsletter-Datum oder plane den Beitrag am Newsletter-Tag vor 15:00 Uhr.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'newsletter_schedule_after_cutoff' => array(
+                    'message' => __( 'Am Newsletter-Tag muss die Veröffentlichung auf immo-invest.ch vor 15:00 Uhr eingeplant sein.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'newsletter_missing' => array(
+                    'message' => __( 'Bitte eine Newsletter ID angeben.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'newsletter_unknown' => array(
+                    'message' => __( 'Diese Newsletter ID ist nicht in der Newsletter-Planung (newsletter-schedule.json) hinterlegt.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'newsletter_schedule_invalid' => array(
+                    'message' => __( 'Das Veröffentlichungsdatum oder die Veröffentlichungszeit ist ungültig.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'newsletter_schedule_after_newsletter' => array(
+                    'message' => __( 'Wähle ein Veröffentlichungsdatum vor dem Newsletter-Datum oder plane den Beitrag am Newsletter-Tag vor 15:00 Uhr.', 'wp-automation-editor' ),
+                    'type' => 'error',
+                ),
+                'newsletter_schedule_after_cutoff' => array(
+                    'message' => __( 'Am Newsletter-Tag muss die Veröffentlichung auf immo-invest.ch vor 15:00 Uhr eingeplant sein.', 'wp-automation-editor' ),
                     'type' => 'error',
                 ),
                 'schedule_incomplete' => array(

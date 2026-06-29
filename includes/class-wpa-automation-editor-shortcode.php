@@ -317,9 +317,13 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             $remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
             $remote_publish_type = 'newsletter';
 
-            if ( '' === (string) $newsletter_id && ( '' !== $remote_publish_date || '' !== $remote_publish_time ) ) {
+            if ( '' !== (string) $newsletter_id && ( '' !== $remote_publish_date || '' !== $remote_publish_time ) ) {
+                $remote_publish_type = 'newsletter_immonews';
+            } elseif ( '' === (string) $newsletter_id && ( '' !== $remote_publish_date || '' !== $remote_publish_time ) ) {
                 $remote_publish_type = 'immonews';
             }
+
+            $next_newsletter = WPA_Automation_Editor_Helpers::get_next_newsletter();
             $occupied_remote_publish_slots = array();
             $occupied_remote_publish_slots_by_time = array();
 
@@ -380,6 +384,19 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                     <small><?php esc_html_e( 'Der Beitrag wird mit Veröffentlichungsdatum und Uhrzeit geplant.', 'wp-automation-editor' ); ?></small>
                                 </span>
                             </label>
+
+                            <label class="wpa-radio-card">
+                                <input
+                                    type="radio"
+                                    name="remote_publish_type"
+                                    value="newsletter_immonews"
+                                    <?php checked( $remote_publish_type, 'newsletter_immonews' ); ?>
+                                >
+                                <span>
+                                    <strong><?php esc_html_e( 'Newsletter & immoNews', 'wp-automation-editor' ); ?></strong>
+                                    <small><?php esc_html_e( 'Der Beitrag wird auf immo-invest.ch vorgeplant und zusätzlich im Newsletter geführt.', 'wp-automation-editor' ); ?></small>
+                                </span>
+                            </label>
                         </div>
 
                         <div class="wpa-publish-type-panel" data-wpa-publish-panel="newsletter">
@@ -398,6 +415,20 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 <p class="wpa-help-text">
                                     <?php esc_html_e( 'Hier die Newsletter-Nummer angeben, falls der Beitrag in den Newsletter kommen soll.', 'wp-automation-editor' ); ?>
                                 </p>
+
+                                <?php if ( ! empty( $next_newsletter ) ) : ?>
+                                    <p class="wpa-help-text wpa-next-newsletter-hint">
+                                        <?php
+                                        echo esc_html(
+                                            sprintf(
+                                                __( 'Der nächste Newsletter #%1$s ist am %2$s.', 'wp-automation-editor' ),
+                                                $next_newsletter['newsletter_id'],
+                                                $next_newsletter['formatted_date']
+                                            )
+                                        );
+                                        ?>
+                                    </p>
+                                <?php endif; ?>
                             </div>
                         </div>
 
