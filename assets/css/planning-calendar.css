@@ -227,11 +227,9 @@
 	}
 }
 
-.wpa-plan-calendar-day--tuesday .wpa-plan-calendar-day__empty, 
 .wpa-plan-calendar-day--tuesday .wpa-plan-calendar-day__count {
-    display: none;
+	background: #e6e6e6;
 }
-
 
 .wpa-plan-calendar-day--tuesday {
     background: #e6e6e6;

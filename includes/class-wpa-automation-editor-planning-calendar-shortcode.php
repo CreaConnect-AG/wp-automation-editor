@@ -158,6 +158,14 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 				foreach ( $newsletter_post_ids[ $newsletter_id ] as $post_id ) {
 					$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
+					$relevant_post_date = $this->get_relevant_post_date( $post_id, $remote_publish_schedule );
+					$relevant_post_time = $this->get_relevant_post_time( $post_id, $remote_publish_schedule );
+
+					if ( $relevant_post_date === $date_key && '' !== $relevant_post_time ) {
+						if ( $this->merge_newsletter_data_into_existing_day_post( $posts_by_date, $date_key, $post_id, $newsletter_id, $relevant_post_time ) ) {
+							continue;
+						}
+					}
 
 					$title = get_the_title( $post_id );
 					$title = '' !== trim( $title ) ? $title : __( 'Beitrag ohne Titel', 'wp-automation-editor' );
@@ -181,7 +189,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 					$posts_by_date[ $date_key ][] = array(
 						'id' => $post_id,
 						'title' => $title,
-						'time' => '',
+						'time' => $relevant_post_date === $date_key ? $relevant_post_time : '',
 						'newsletter_id' => $newsletter_id,
 						'remote_publish_overlay' => $remote_publish_overlay,
 						'remote_publish_title' => $remote_publish_title,
@@ -194,8 +202,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 				usort(
 					$date_posts,
 					function ( $first_post, $second_post ) {
-						$first_prefix = '' !== $first_post['newsletter_id'] ? '#' . $first_post['newsletter_id'] : $first_post['time'];
-						$second_prefix = '' !== $second_post['newsletter_id'] ? '#' . $second_post['newsletter_id'] : $second_post['time'];
+						$first_prefix = $this->get_post_display_prefix( $first_post );
+						$second_prefix = $this->get_post_display_prefix( $second_post );
 
 						return strcmp( $first_prefix . $first_post['title'], $second_prefix . $second_post['title'] );
 					}
@@ -377,6 +385,27 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 			return $post_ids_by_newsletter_id;
 		}
 
+		private function merge_newsletter_data_into_existing_day_post( &$posts_by_date, $date_key, $post_id, $newsletter_id, $post_time ) {
+			if ( empty( $posts_by_date[ $date_key ] ) ) {
+				return false;
+			}
+
+			foreach ( $posts_by_date[ $date_key ] as $post_index => $post_item ) {
+				if ( absint( $post_item['id'] ) !== absint( $post_id ) ) {
+					continue;
+				}
+
+				$posts_by_date[ $date_key ][ $post_index ]['newsletter_id'] = (string) absint( $newsletter_id );
+				$posts_by_date[ $date_key ][ $post_index ]['time'] = $post_time;
+				$posts_by_date[ $date_key ][ $post_index ]['remote_publish_overlay'] = '';
+				$posts_by_date[ $date_key ][ $post_index ]['remote_publish_title'] = '';
+
+				return true;
+			}
+
+			return false;
+		}
+
 		private function format_calendar_date( $date ) {
 			if ( ! $this->is_valid_date( $date ) ) {
 				return '';
@@ -424,6 +453,21 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
             return $permalink ? $permalink : '';
         }
+
+		private function get_post_display_prefix( $post_item ) {
+			$newsletter_id = isset( $post_item['newsletter_id'] ) ? (string) $post_item['newsletter_id'] : '';
+			$post_time = isset( $post_item['time'] ) ? (string) $post_item['time'] : '';
+
+			if ( '' !== $newsletter_id && '' !== $post_time ) {
+				return '#' . $newsletter_id . ' | ' . $post_time;
+			}
+
+			if ( '' !== $newsletter_id ) {
+				return '#' . $newsletter_id;
+			}
+
+			return $post_time;
+		}
 
 		private function render_day( $current_datetime, $posts, $newsletter_id = '' ) {
 			$post_count = count( $posts );
@@ -494,12 +538,12 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 									</span>
 								<?php endif; ?>
 
-								<?php if ( '' !== $post_item['newsletter_id'] ) : ?>
-									<span class="wpa-plan-calendar-day__post-time wpa-plan-calendar-day__post-newsletter-id">
-										<?php echo esc_html( '#' . $post_item['newsletter_id'] ); ?>
+								<?php $post_display_prefix = $this->get_post_display_prefix( $post_item ); ?>
+
+								<?php if ( '' !== $post_display_prefix ) : ?>
+									<span class="wpa-plan-calendar-day__post-time<?php echo '' !== $post_item['newsletter_id'] ? ' wpa-plan-calendar-day__post-newsletter-id' : ''; ?>">
+										<?php echo esc_html( $post_display_prefix ); ?>
 									</span>
-								<?php elseif ( '' !== $post_item['time'] ) : ?>
-									<span class="wpa-plan-calendar-day__post-time"><?php echo esc_html( $post_item['time'] ); ?></span>
 								<?php endif; ?>
 
 								<span class="wpa-plan-calendar-day__post-title"><?php echo esc_html( $post_item['title'] ); ?></span>
@@ -534,7 +578,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 			foreach ( $posts as $post_item ) {
 				if ( '' !== $post_item['newsletter_id'] ) {
-					$line = '#' . $post_item['newsletter_id'] . ' – ' . $post_item['title'];
+					$line = $this->get_post_display_prefix( $post_item ) . ' – ' . $post_item['title'];
 
 					if ( '' !== $post_item['remote_publish_title'] ) {
 						$line .= ' (' . $post_item['remote_publish_title'] . ')';
