@@ -228,8 +228,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 		}
 
 		public static function get_remote_request_timeout() {
-			$timeout = defined( 'WPA_EDITOR_REMOTE_REQUEST_TIMEOUT' ) ? absint( WPA_EDITOR_REMOTE_REQUEST_TIMEOUT ) : 12;
-			return max( 3, min( 30, (int) apply_filters( 'wpa_automation_editor_remote_request_timeout', $timeout ) ) );
+			$timeout = defined( 'WPA_EDITOR_REMOTE_REQUEST_TIMEOUT' ) ? absint( WPA_EDITOR_REMOTE_REQUEST_TIMEOUT ) : 30;
+			return max( 3, min( 60, (int) apply_filters( 'wpa_automation_editor_remote_request_timeout', $timeout ) ) );
 		}
 
 		public static function get_remote_media_timeout() {
@@ -445,14 +445,9 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			}
 
 			$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
-			$remote_publish_datetime_string = '';
-
-			if ( '' === (string) $newsletter_id ) {
-				$remote_publish_datetime_string = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string(
-					$remote_publish_schedule['date'],
-					$remote_publish_schedule['time']
-				);
-			}
+			$remote_publish_date = isset( $remote_publish_schedule['date'] ) ? $remote_publish_schedule['date'] : '';
+			$remote_publish_time = isset( $remote_publish_schedule['time'] ) ? $remote_publish_schedule['time'] : '';
+			$remote_publish_datetime_string = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string( $remote_publish_date, $remote_publish_time );
 
 			$remote_post_status = 'draft';
 
@@ -478,8 +473,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 				$remote_post_data['date'] = $remote_publish_datetime_string;
 			}
 
-			if ( '' !== (string) $newsletter_id ) {
-				$remote_post_data['acf']['newsletter_id'] = $newsletter_id;
+			$newsletter_id_int = absint( $newsletter_id );
+
+			if ( $newsletter_id_int > 0 ) {
+				$remote_post_data['acf']['newsletter_id'] = $newsletter_id_int;
 			}
 
 			return apply_filters( 'wpa_automation_editor_remote_post_data', $remote_post_data, $post_id );
@@ -999,8 +996,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			}
 
 			$newsletter_id = WPA_Automation_Editor_Helpers::get_post_newsletter_id( $post_id );
-			$has_newsletter_id = '' !== $newsletter_id;
-			$newsletter_id_int = $has_newsletter_id ? absint( $newsletter_id ) : 0;
+			$newsletter_id_int = absint( $newsletter_id );
+			$has_newsletter_id = $newsletter_id_int > 0;
 
 			$remote_publish_date = '';
 			$remote_publish_date_label = '';
@@ -1010,39 +1007,37 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			$remote_publish_label = '';
 			$has_remote_publish_schedule = false;
 
-			if ( ! $has_newsletter_id ) {
-				$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
-				$remote_publish_date_raw = isset( $remote_publish_schedule['date'] ) ? sanitize_text_field( (string) $remote_publish_schedule['date'] ) : '';
-				$remote_publish_time_raw = isset( $remote_publish_schedule['time'] ) ? sanitize_text_field( (string) $remote_publish_schedule['time'] ) : '';
-				$remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
+			$remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
+			$remote_publish_date_raw = isset( $remote_publish_schedule['date'] ) ? sanitize_text_field( (string) $remote_publish_schedule['date'] ) : '';
+			$remote_publish_time_raw = isset( $remote_publish_schedule['time'] ) ? sanitize_text_field( (string) $remote_publish_schedule['time'] ) : '';
+			$remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
 
-				if (
-					WPA_Automation_Editor_Helpers::is_valid_remote_publish_date( $remote_publish_date_raw )
-					&& isset( $remote_publish_time_options[ $remote_publish_time_raw ] )
-				) {
-					$remote_publish_date = $remote_publish_date_raw;
-					$remote_publish_time = $remote_publish_time_raw;
+			if (
+				WPA_Automation_Editor_Helpers::is_valid_remote_publish_date( $remote_publish_date_raw )
+				&& isset( $remote_publish_time_options[ $remote_publish_time_raw ] )
+			) {
+				$remote_publish_date = $remote_publish_date_raw;
+				$remote_publish_time = $remote_publish_time_raw;
 
-					$remote_publish_timestamp = strtotime( $remote_publish_date . ' 00:00:00' );
+				$remote_publish_timestamp = strtotime( $remote_publish_date . ' 00:00:00' );
 
-					if ( false !== $remote_publish_timestamp ) {
-						$remote_publish_date_label = date_i18n( 'd.m.Y', $remote_publish_timestamp );
-					}
+				if ( false !== $remote_publish_timestamp ) {
+					$remote_publish_date_label = date_i18n( 'd.m.Y', $remote_publish_timestamp );
+				}
 
-					$remote_publish_time_label = wp_strip_all_tags( $remote_publish_time_options[ $remote_publish_time ] );
-					$remote_publish_datetime = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string( $remote_publish_date, $remote_publish_time );
+				$remote_publish_time_label = wp_strip_all_tags( $remote_publish_time_options[ $remote_publish_time ] );
+				$remote_publish_datetime = WPA_Automation_Editor_Helpers::get_remote_publish_datetime_string( $remote_publish_date, $remote_publish_time );
 
-					if ( '' !== $remote_publish_datetime ) {
-						$has_remote_publish_schedule = true;
-					}
+				if ( '' !== $remote_publish_datetime ) {
+					$has_remote_publish_schedule = true;
+				}
 
-					if ( '' !== $remote_publish_date_label && '' !== $remote_publish_time_label ) {
-						$remote_publish_label = sprintf(
-							__( '%1$s um %2$s', 'wp-automation-editor' ),
-							$remote_publish_date_label,
-							$remote_publish_time_label
-						);
-					}
+				if ( '' !== $remote_publish_date_label && '' !== $remote_publish_time_label ) {
+					$remote_publish_label = sprintf(
+						__( '%1$s um %2$s', 'wp-automation-editor' ),
+						$remote_publish_date_label,
+						$remote_publish_time_label
+					);
 				}
 			}
 
@@ -1050,32 +1045,41 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			$publication_label = '';
 			$publication_message = '';
 
-			if ( $has_newsletter_id ) {
-				$publication_type = 'newsletter';
+			if ( $has_newsletter_id && $has_remote_publish_schedule ) {
+				$publication_type = 'newsletter_remote_publish';
 				$publication_label = sprintf(
-					__( 'immoNewsletter #%s', 'wp-automation-editor' ),
-					$newsletter_id_int
+					__( 'immoNewsletter #%1$s · %2$s', 'wp-automation-editor' ),
+					$newsletter_id_int,
+					$remote_publish_label
 				);
-				$publication_message = sprintf(
-					__( 'Der Beitrag wird mit dem immoNewsletter #%s veröffentlicht.', 'wp-automation-editor' ),
-					$newsletter_id_int
-				);
-			} elseif ( $has_remote_publish_schedule ) {
-				$publication_type = 'remote_publish';
-				$publication_label = $remote_publish_label;
 
 				if ( $has_featured_image ) {
 					$publication_message = sprintf(
-						__( 'Der Beitrag ist für den %1$s um %2$s vorgeplant auf immo-invest.ch.', 'wp-automation-editor' ),
+						__( 'Der Beitrag ist im immoNewsletter #%1$s eingeplant und wird am %2$s um %3$s auf immo-invest.ch veröffentlicht.', 'wp-automation-editor' ),
+						$newsletter_id_int,
 						$remote_publish_date_label,
 						$remote_publish_time_label
 					);
 				} else {
 					$publication_message = sprintf(
-						__( 'HANDLUNGSBEDARF: Das Beitragsbild fehlt, der Beitrag soll am %1$s um %2$s vorgeplant werden auf immo-invest.ch.', 'wp-automation-editor' ),
+						__( 'HANDLUNGSBEDARF: Das Beitragsbild fehlt, der Beitrag ist im immoNewsletter #%1$s eingeplant und soll am %2$s um %3$s auf immo-invest.ch veröffentlicht werden.', 'wp-automation-editor' ),
+						$newsletter_id_int,
 						$remote_publish_date_label,
 						$remote_publish_time_label
 					);
+				}
+			} elseif ( $has_newsletter_id ) {
+				$publication_type = 'newsletter';
+				$publication_label = sprintf( __( 'immoNewsletter #%s', 'wp-automation-editor' ), $newsletter_id_int );
+				$publication_message = sprintf( __( 'Der Beitrag wird mit dem immoNewsletter #%s veröffentlicht.', 'wp-automation-editor' ), $newsletter_id_int );
+			} elseif ( $has_remote_publish_schedule ) {
+				$publication_type = 'remote_publish';
+				$publication_label = $remote_publish_label;
+
+				if ( $has_featured_image ) {
+					$publication_message = sprintf( __( 'Der Beitrag ist für den %1$s um %2$s vorgeplant auf immo-invest.ch.', 'wp-automation-editor' ), $remote_publish_date_label, $remote_publish_time_label );
+				} else {
+					$publication_message = sprintf( __( 'HANDLUNGSBEDARF: Das Beitragsbild fehlt, der Beitrag soll am %1$s um %2$s vorgeplant werden auf immo-invest.ch.', 'wp-automation-editor' ), $remote_publish_date_label, $remote_publish_time_label );
 				}
 			}
 
@@ -1127,7 +1131,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			$response = wp_remote_post(
 				$webhook_url,
 				array(
-					'timeout' => 10,
+					'timeout' => 20,
 					'headers' => array(
 						'Content-Type' => 'application/json; charset=utf-8',
 					),
