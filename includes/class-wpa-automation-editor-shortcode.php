@@ -363,6 +363,19 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 <input
                                     type="radio"
                                     name="remote_publish_type"
+                                    value="immonews"
+                                    <?php checked( $remote_publish_type, 'immonews' ); ?>
+                                >
+                                <span>
+                                    <strong><?php esc_html_e( 'immoNews (nur als immo-invest.ch Beitrag veröffentlichen)', 'wp-automation-editor' ); ?></strong>
+                                    <small><?php esc_html_e( 'Der Beitrag wird mit Veröffentlichungsdatum und Uhrzeit geplant.', 'wp-automation-editor' ); ?></small>
+                                </span>
+                            </label>
+                        
+                            <label class="wpa-radio-card">
+                                <input
+                                    type="radio"
+                                    name="remote_publish_type"
                                     value="newsletter"
                                     <?php checked( $remote_publish_type, 'newsletter' ); ?>
                                 >
@@ -376,24 +389,11 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 <input
                                     type="radio"
                                     name="remote_publish_type"
-                                    value="immonews"
-                                    <?php checked( $remote_publish_type, 'immonews' ); ?>
-                                >
-                                <span>
-                                    <strong><?php esc_html_e( 'immoNews (nur als immo-invest.ch Beitrag veröffentlichen)', 'wp-automation-editor' ); ?></strong>
-                                    <small><?php esc_html_e( 'Der Beitrag wird mit Veröffentlichungsdatum und Uhrzeit geplant.', 'wp-automation-editor' ); ?></small>
-                                </span>
-                            </label>
-
-                            <label class="wpa-radio-card">
-                                <input
-                                    type="radio"
-                                    name="remote_publish_type"
                                     value="newsletter_immonews"
                                     <?php checked( $remote_publish_type, 'newsletter_immonews' ); ?>
                                 >
                                 <span>
-                                    <strong><?php esc_html_e( 'Newsletter & immoNews', 'wp-automation-editor' ); ?></strong>
+                                    <strong><?php esc_html_e( 'immoNews & Newsletter', 'wp-automation-editor' ); ?></strong>
                                     <small><?php esc_html_e( 'Der Beitrag wird auf immo-invest.ch vorgeplant und zusätzlich im Newsletter geführt.', 'wp-automation-editor' ); ?></small>
                                 </span>
                             </label>
