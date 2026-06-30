@@ -471,8 +471,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 		private function render_day( $current_datetime, $posts, $newsletter_id = '' ) {
 			$post_count = count( $posts );
+
 			$is_today = $current_datetime->format( 'Y-m-d' ) === wp_date( 'Y-m-d' );
 			$is_tuesday = 2 === (int) $current_datetime->format( 'N' );
+
 			$newsletter_id = absint( $newsletter_id );
 
 			$classes = array(
@@ -492,12 +494,11 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 				$classes[] = 'wpa-plan-calendar-day--newsletter';
 			}
 
-			$visible_posts = array_slice( $posts, 0, 4 );
-			$hidden_post_count = max( 0, $post_count - count( $visible_posts ) );
 			$hover_title = $this->get_hover_title( $current_datetime, $posts );
 
 			ob_start();
 			?>
+
 			<div class="<?php echo esc_attr( implode( ' ', $classes ) ); ?>" style="--wpa-plan-day-color: <?php echo esc_attr( $this->get_count_color( $post_count ) ); ?>;" title="<?php echo esc_attr( $hover_title ); ?>">
 				<div class="wpa-plan-calendar-day__top">
 					<div>
@@ -509,16 +510,23 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 				</div>
 
 				<?php if ( $is_tuesday && $newsletter_id > 0 ) : ?>
+
 					<div class="wpa-plan-calendar-day__newsletter">
 						<?php echo esc_html( sprintf( __( 'immoNewsletter #%d', 'wp-automation-editor' ), $newsletter_id ) ); ?>
 					</div>
+
 				<?php elseif ( $is_tuesday ) : ?>
+
 					<div class="wpa-plan-calendar-day__newsletter"><?php esc_html_e( 'Newsletter', 'wp-automation-editor' ); ?></div>
+
 				<?php endif; ?>
 
 				<?php if ( $post_count > 0 ) : ?>
+
 					<div class="wpa-plan-calendar-day__posts">
-						<?php foreach ( $visible_posts as $post_item ) : ?>
+
+						<?php foreach ( $posts as $post_item ) : ?>
+
 							<?php
 							$post_classes = array( 'wpa-plan-calendar-day__post' );
 
@@ -531,7 +539,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 							}
 							?>
 
-							<a class="<?php echo esc_attr( implode( ' ', $post_classes ) ); ?>" href="<?php echo esc_url( $post_item['url'] ); ?>" target="_blank">
+							<a class="<?php echo esc_attr( implode( ' ', $post_classes ) ); ?>" href="<?php echo esc_url( $post_item['url'] ); ?>" target="_blank" rel="noopener">
 								<?php if ( '' !== $post_item['remote_publish_overlay'] ) : ?>
 									<span class="wpa-plan-calendar-day__post-overlay" title="<?php echo esc_attr( $post_item['remote_publish_title'] ); ?>">
 										<?php echo esc_html( $post_item['remote_publish_overlay'] ); ?>
@@ -548,18 +556,18 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 								<span class="wpa-plan-calendar-day__post-title"><?php echo esc_html( $post_item['title'] ); ?></span>
 							</a>
+
 						<?php endforeach; ?>
 
-						<?php if ( $hidden_post_count > 0 ) : ?>
-							<div class="wpa-plan-calendar-day__more">
-								<?php echo esc_html( sprintf( __( '+%d weitere', 'wp-automation-editor' ), $hidden_post_count ) ); ?>
-							</div>
-						<?php endif; ?>
 					</div>
+
 				<?php else : ?>
+
 					<div class="wpa-plan-calendar-day__empty"><?php esc_html_e( 'Fehlt', 'wp-automation-editor' ); ?></div>
+
 				<?php endif; ?>
 			</div>
+
 			<?php
 
 			return ob_get_clean();

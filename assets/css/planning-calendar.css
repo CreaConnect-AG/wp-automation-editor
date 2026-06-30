@@ -270,3 +270,63 @@
 .wpa-plan-calendar-day__post-newsletter-id {
 	font-weight: 900;
 }
+
+.wpa-plan-calendar-day {
+	height: 250px;
+	min-height: 250px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+}
+
+.wpa-plan-calendar-day__posts {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding-right: 4px;
+}
+
+.wpa-plan-calendar-day__post {
+	flex: 0 0 auto;
+}
+
+.wpa-plan-calendar-day--empty {
+	height: 250px;
+	min-height: 250px;
+	display: block;
+}
+
+@media (max-width: 782px) {
+	.wpa-plan-calendar-day,
+	.wpa-plan-calendar-day--empty {
+		height: 180px;
+		min-height: 180px;
+	}
+}
+
+/* Scrollbar innerhalb der Tagesbox */
+.wpa-plan-calendar-day__posts {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
+}
+
+/* Chrome, Edge, Safari */
+.wpa-plan-calendar-day__posts::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+}
+
+.wpa-plan-calendar-day__posts::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.wpa-plan-calendar-day__posts::-webkit-scrollbar-thumb {
+	background-color: rgba(0, 0, 0, 0.28);
+	border-radius: 999px;
+}
+
+.wpa-plan-calendar-day__posts::-webkit-scrollbar-thumb:hover {
+	background-color: rgba(0, 0, 0, 0.45);
+}
