@@ -315,12 +315,19 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             $remote_publish_date = $remote_publish_schedule['date'];
             $remote_publish_time = $remote_publish_schedule['time'];
             $remote_publish_time_options = WPA_Automation_Editor_Helpers::get_remote_publish_time_options();
-            $remote_publish_type = 'newsletter';
+            $remote_publish_type = 'immonews';
 
             if ( '' !== (string) $newsletter_id && ( '' !== $remote_publish_date || '' !== $remote_publish_time ) ) {
                 $remote_publish_type = 'newsletter_immonews';
-            } elseif ( '' === (string) $newsletter_id && ( '' !== $remote_publish_date || '' !== $remote_publish_time ) ) {
+
+            } elseif ( '' !== (string) $newsletter_id ) {
+
+                $remote_publish_type = 'newsletter';
+
+            } elseif ( '' !== $remote_publish_date || '' !== $remote_publish_time ) {
+
                 $remote_publish_type = 'immonews';
+
             }
 
             $next_newsletter = WPA_Automation_Editor_Helpers::get_next_newsletter();
@@ -621,16 +628,18 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                         </div>
                     </div>
 
-                    <div class="wpa-form-row">
-                        <label for="wpa_workflow_status"><?php esc_html_e( 'Workflow-Status', 'wp-automation-editor' ); ?></label>
+                    <div class="wpa-form-section">
+                        <div class="wpa-form-row">
+                            <label for="wpa_workflow_status"><?php esc_html_e( 'Workflow-Status', 'wp-automation-editor' ); ?></label>
 
-                        <select id="wpa_workflow_status" name="workflow_status">
-                            <?php foreach ( $status_options as $status_key => $status_label ) : ?>
-                                <option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_key, $current_status ); ?>>
-                                    <?php echo esc_html( $status_label ); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                            <select id="wpa_workflow_status" name="workflow_status">
+                                <?php foreach ( $status_options as $status_key => $status_label ) : ?>
+                                    <option value="<?php echo esc_attr( $status_key ); ?>" <?php selected( $status_key, $current_status ); ?>>
+                                        <?php echo esc_html( $status_label ); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="wpa-form-section">
