@@ -56,6 +56,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Assets' ) ) {
                     'currentEditPostId' => WPA_Automation_Editor_Helpers::get_current_edit_post_id(),
                     'lockLostMessage' => __( 'Dieser Beitrag ist nicht mehr für dich freigegeben. Bitte lade die Seite neu.', 'wp-automation-editor' ),
                     'newsletterScheduleById' => WPA_Automation_Editor_Helpers::get_newsletter_schedule_by_id(),
+                    'newsletterUnknownText' => __( 'Diese Newsletter ID ist nicht in der Newsletter-Planung (newsletter-schedule.json) hinterlegt.', 'wp-automation-editor' ),
                     'newsletterRemotePublishInvalidText' => __( 'Die Veröffentlichung auf immo-invest.ch muss vor dem Newsletter-Datum oder am Newsletter-Tag vor 15:00 Uhr liegen.', 'wp-automation-editor' ),
                     'newsletterUnknownText' => __( 'Diese Newsletter ID ist nicht in der Newsletter-Planung (newsletter-schedule.json) hinterlegt.', 'wp-automation-editor' ),
                 )

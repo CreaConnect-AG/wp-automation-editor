@@ -324,6 +324,28 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             }
 
             $next_newsletter = WPA_Automation_Editor_Helpers::get_next_newsletter();
+            $newsletter_schedule = WPA_Automation_Editor_Helpers::get_newsletter_schedule();
+            $today = wp_date( 'Y-m-d' );
+            $upcoming_newsletter_schedule = array();
+            $current_newsletter_date = '';
+
+            foreach ( $newsletter_schedule as $newsletter_date => $scheduled_newsletter_id ) {
+                if ( (string) $newsletter_id === (string) $scheduled_newsletter_id ) {
+                    $current_newsletter_date = $newsletter_date;
+                }
+
+                if ( $newsletter_date < $today ) {
+                    continue;
+                }
+
+                $upcoming_newsletter_schedule[ $newsletter_date ] = $scheduled_newsletter_id;
+            }
+
+            $current_newsletter_is_past = (
+                '' !== $newsletter_id
+                && '' !== $current_newsletter_date
+                && $current_newsletter_date < $today
+            );
             $occupied_remote_publish_slots = array();
             $occupied_remote_publish_slots_by_time = array();
 
@@ -403,14 +425,50 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                             <div class="wpa-form-row">
                                 <label for="wpa_newsletter_id"><?php esc_html_e( 'Newsletter ID', 'wp-automation-editor' ); ?></label>
 
-                                <input
-                                    type="number"
-                                    id="wpa_newsletter_id"
-                                    name="newsletter_id"
-                                    min="0"
-                                    step="1"
-                                    value="<?php echo esc_attr( $newsletter_id ); ?>"
-                                >
+                                <select id="wpa_newsletter_id" name="newsletter_id">
+                                    <option value=""><?php esc_html_e( 'Newsletter auswählen', 'wp-automation-editor' ); ?></option>
+
+                                    <?php if ( $current_newsletter_is_past ) : ?>
+                                        <?php
+                                        $current_newsletter_date_object = DateTimeImmutable::createFromFormat( '!Y-m-d', $current_newsletter_date );
+                                        $current_newsletter_date_label = $current_newsletter_date_object
+                                            ? $current_newsletter_date_object->format( 'd.m.Y' )
+                                            : $current_newsletter_date;
+
+                                        $current_newsletter_option_label = sprintf(
+                                            '#%1$s | %2$s',
+                                            $newsletter_id,
+                                            $current_newsletter_date_label
+                                        );
+                                        ?>
+
+                                        <option value="<?php echo esc_attr( $newsletter_id ); ?>" selected>
+                                            <?php echo esc_html( $current_newsletter_option_label ); ?>
+                                        </option>
+                                    <?php endif; ?>
+
+                                    <?php foreach ( $upcoming_newsletter_schedule as $newsletter_date => $scheduled_newsletter_id ) : ?>
+                                        <?php
+                                        $newsletter_date_object = DateTimeImmutable::createFromFormat( '!Y-m-d', $newsletter_date );
+                                        $newsletter_date_label = $newsletter_date_object
+                                            ? $newsletter_date_object->format( 'd.m.Y' )
+                                            : $newsletter_date;
+
+                                        $newsletter_option_label = sprintf(
+                                            '#%1$s | %2$s',
+                                            $scheduled_newsletter_id,
+                                            $newsletter_date_label
+                                        );
+                                        ?>
+
+                                        <option
+                                            value="<?php echo esc_attr( $scheduled_newsletter_id ); ?>"
+                                            <?php selected( (string) $newsletter_id, (string) $scheduled_newsletter_id ); ?>
+                                        >
+                                            <?php echo esc_html( $newsletter_option_label ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
 
                                 <p class="wpa-help-text">
                                     <?php esc_html_e( 'Hier die Newsletter-Nummer angeben, falls der Beitrag in den Newsletter kommen soll.', 'wp-automation-editor' ); ?>
