@@ -551,71 +551,6 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                     </div>
 
                     <div class="wpa-form-section">
-                        <h3><?php esc_html_e( 'Bild & Prompt', 'wp-automation-editor' ); ?></h3>
-
-                        <div class="wpa-featured-image-box">
-                            <label for="wpa_featured_image"><?php esc_html_e( 'Beitragsbild', 'wp-automation-editor' ); ?></label>
-
-                            <?php if ( ! empty( $featured_image_html ) ) : ?>
-                                <div class="wpa-featured-image-wrap">
-                                    <?php echo wp_kses_post( $featured_image_html ); ?>
-                                </div>
-
-                                <?php if ( current_user_can( 'upload_files' ) ) : ?>
-                                    <div class="wpa-featured-image-upload">
-                                        <input
-                                            type="file"
-                                            id="wpa_featured_image"
-                                            name="wpa_featured_image"
-                                            accept="image/jpeg,image/png,image/gif,image/webp"
-                                        >
-
-                                        <p class="wpa-help-text">
-                                            <?php esc_html_e( 'Optional ein neues Bild auswählen. Es wird beim Speichern als neues Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
-                                        </p>
-
-                                        <label class="wpa-checkbox-label">
-                                            <input type="checkbox" name="remove_featured_image" value="1">
-                                            <?php esc_html_e( 'Aktuelles Beitragsbild entfernen', 'wp-automation-editor' ); ?>
-                                        </label>
-                                    </div>
-                                <?php endif; ?>
-                            <?php else : ?>
-                                <div class="wpa-featured-image-empty">
-                                    <?php esc_html_e( 'Für diesen Beitrag ist noch kein Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
-                                </div>
-
-                                <?php if ( current_user_can( 'upload_files' ) ) : ?>
-                                    <div class="wpa-featured-image-upload">
-                                        <input
-                                            type="file"
-                                            id="wpa_featured_image"
-                                            name="wpa_featured_image"
-                                            accept="image/jpeg,image/png,image/gif,image/webp"
-                                        >
-
-                                        <p class="wpa-help-text">
-                                            <?php esc_html_e( 'Bild auswählen und danach unten auf Speichern klicken.', 'wp-automation-editor' ); ?>
-                                        </p>
-                                    </div>
-                                <?php else : ?>
-                                    <p class="wpa-help-text">
-                                        <?php esc_html_e( 'Du hast keine Berechtigung, Bilder hochzuladen.', 'wp-automation-editor' ); ?>
-                                    </p>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="wpa-midjourney-box">
-                            <label><?php esc_html_e( 'Midjourney Prompt', 'wp-automation-editor' ); ?></label>
-
-                            <div class="wpa-featured-image-wrap">
-                                <?php echo nl2br( esc_html( $midjourney_prompt ) ); ?>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="wpa-form-section">
                         <h3><?php esc_html_e( 'Beitragsinhalt', 'wp-automation-editor' ); ?></h3>
 
                         <div class="wpa-form-row">
@@ -696,6 +631,71 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 </option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+
+                    <div class="wpa-form-section">
+                        <h3><?php esc_html_e( 'Bild & Prompt', 'wp-automation-editor' ); ?></h3>
+
+                        <div class="wpa-featured-image-box">
+                            <label for="wpa_featured_image"><?php esc_html_e( 'Beitragsbild', 'wp-automation-editor' ); ?></label>
+
+                            <?php if ( ! empty( $featured_image_html ) ) : ?>
+                                <div class="wpa-featured-image-wrap">
+                                    <?php echo wp_kses_post( $featured_image_html ); ?>
+                                </div>
+
+                                <?php if ( current_user_can( 'upload_files' ) ) : ?>
+                                    <div class="wpa-featured-image-upload">
+                                        <input
+                                            type="file"
+                                            id="wpa_featured_image"
+                                            name="wpa_featured_image"
+                                            accept="image/jpeg,image/png,image/gif,image/webp"
+                                        >
+
+                                        <p class="wpa-help-text">
+                                            <?php esc_html_e( 'Optional ein neues Bild auswählen. Es wird beim Speichern als neues Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
+                                        </p>
+
+                                        <label class="wpa-checkbox-label">
+                                            <input type="checkbox" name="remove_featured_image" value="1">
+                                            <?php esc_html_e( 'Aktuelles Beitragsbild entfernen', 'wp-automation-editor' ); ?>
+                                        </label>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else : ?>
+                                <div class="wpa-featured-image-empty">
+                                    <?php esc_html_e( 'Für diesen Beitrag ist noch kein Beitragsbild gesetzt.', 'wp-automation-editor' ); ?>
+                                </div>
+
+                                <?php if ( current_user_can( 'upload_files' ) ) : ?>
+                                    <div class="wpa-featured-image-upload">
+                                        <input
+                                            type="file"
+                                            id="wpa_featured_image"
+                                            name="wpa_featured_image"
+                                            accept="image/jpeg,image/png,image/gif,image/webp"
+                                        >
+
+                                        <p class="wpa-help-text">
+                                            <?php esc_html_e( 'Bild auswählen und danach unten auf Speichern klicken.', 'wp-automation-editor' ); ?>
+                                        </p>
+                                    </div>
+                                <?php else : ?>
+                                    <p class="wpa-help-text">
+                                        <?php esc_html_e( 'Du hast keine Berechtigung, Bilder hochzuladen.', 'wp-automation-editor' ); ?>
+                                    </p>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+
+                        <div class="wpa-midjourney-box">
+                            <label><?php esc_html_e( 'Midjourney Prompt', 'wp-automation-editor' ); ?></label>
+
+                            <div class="wpa-featured-image-wrap">
+                                <?php echo nl2br( esc_html( $midjourney_prompt ) ); ?>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="wpa-form-actions">
