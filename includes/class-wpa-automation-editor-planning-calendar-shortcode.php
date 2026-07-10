@@ -9,7 +9,9 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 		const SHORTCODE = 'wpa_planungskalender';
 		const STYLE_HANDLE = 'wpa-planning-calendar';
-		const DAYS_TO_SHOW = 14;
+		const MONTH_QUERY_ARGUMENT = 'wpa_calendar_month';
+		const MONTHS_BEFORE_CURRENT = 1;
+		const MONTHS_AFTER_CURRENT = 1;
 
 		const NEWSLETTER_SCHEDULE_FILE = 'data/newsletter-schedule.json';
 		private $newsletter_schedule = null;
@@ -33,8 +35,28 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 			}
 
 			$timezone = wp_timezone();
-			$start_datetime = new DateTimeImmutable( 'today', $timezone );
-			$end_datetime = $start_datetime->modify( '+' . ( self::DAYS_TO_SHOW - 1 ) . ' days' );
+			$current_month_datetime = new DateTimeImmutable( 'first day of this month 00:00:00', $timezone );
+			$minimum_month_datetime = $current_month_datetime->modify( '-' . self::MONTHS_BEFORE_CURRENT . ' months' );
+			$maximum_month_datetime = $current_month_datetime->modify( '+' . self::MONTHS_AFTER_CURRENT . ' months' );
+			$start_datetime = $this->get_selected_month_datetime(
+				$current_month_datetime,
+				$minimum_month_datetime,
+				$maximum_month_datetime,
+				$timezone
+			);
+			$end_datetime = $start_datetime->modify( 'last day of this month' );
+			$days_in_month = (int) $start_datetime->format( 't' );
+
+			$previous_month_datetime = $start_datetime->modify( '-1 month' );
+			$next_month_datetime = $start_datetime->modify( '+1 month' );
+			$previous_month_url = $previous_month_datetime >= $minimum_month_datetime
+				? $this->get_month_url( $previous_month_datetime )
+				: '';
+			$next_month_url = $next_month_datetime <= $maximum_month_datetime
+				? $this->get_month_url( $next_month_datetime )
+				: '';
+			$current_month_url = $this->get_month_url( $current_month_datetime );
+			$is_current_month = $start_datetime->format( 'Y-m' ) === $current_month_datetime->format( 'Y-m' );
 
 			$newsletter_ids_by_date = $this->get_newsletter_ids_by_date( $start_datetime, $end_datetime );
 			$posts_by_date = $this->get_posts_by_date( $start_datetime, $end_datetime, $newsletter_ids_by_date );
@@ -44,11 +66,47 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 			<div class="wpa-plan-calendar">
 				<div class="wpa-plan-calendar__header">
 					<div>
-						<h3 class="wpa-plan-calendar__title"><?php esc_html_e( 'Planung nächste 2 Wochen', 'wp-automation-editor' ); ?></h3>
+						<h3 class="wpa-plan-calendar__title"><?php echo esc_html( $this->get_month_label( $start_datetime, $timezone ) ); ?></h3>
 						<div class="wpa-plan-calendar__range">
 							<?php echo esc_html( $start_datetime->format( 'd.m.Y' ) . ' – ' . $end_datetime->format( 'd.m.Y' ) ); ?>
 						</div>
 					</div>
+
+					<nav class="wpa-plan-calendar__navigation" aria-label="<?php esc_attr_e( 'Monatsnavigation', 'wp-automation-editor' ); ?>">
+						<?php if ( '' !== $previous_month_url ) : ?>
+							<a class="wpa-plan-calendar__navigation-button" href="<?php echo esc_url( $previous_month_url ); ?>">
+								<span aria-hidden="true">&larr;</span>
+								<span><?php echo esc_html( $this->get_month_label( $previous_month_datetime, $timezone ) ); ?></span>
+							</a>
+						<?php else : ?>
+							<span class="wpa-plan-calendar__navigation-button wpa-plan-calendar__navigation-button--disabled" aria-disabled="true">
+								<span aria-hidden="true">&larr;</span>
+								<span><?php esc_html_e( 'Vorheriger Monat', 'wp-automation-editor' ); ?></span>
+							</span>
+						<?php endif; ?>
+
+						<?php if ( ! $is_current_month ) : ?>
+							<a class="wpa-plan-calendar__navigation-current" href="<?php echo esc_url( $current_month_url ); ?>">
+								<?php esc_html_e( 'Aktueller Monat', 'wp-automation-editor' ); ?>
+							</a>
+						<?php else : ?>
+							<span class="wpa-plan-calendar__navigation-current wpa-plan-calendar__navigation-current--active" aria-current="date">
+								<?php esc_html_e( 'Aktueller Monat', 'wp-automation-editor' ); ?>
+							</span>
+						<?php endif; ?>
+
+						<?php if ( '' !== $next_month_url ) : ?>
+							<a class="wpa-plan-calendar__navigation-button" href="<?php echo esc_url( $next_month_url ); ?>">
+								<span><?php echo esc_html( $this->get_month_label( $next_month_datetime, $timezone ) ); ?></span>
+								<span aria-hidden="true">&rarr;</span>
+							</a>
+						<?php else : ?>
+							<span class="wpa-plan-calendar__navigation-button wpa-plan-calendar__navigation-button--disabled" aria-disabled="true">
+								<span><?php esc_html_e( 'Nächster Monat', 'wp-automation-editor' ); ?></span>
+								<span aria-hidden="true">&rarr;</span>
+							</span>
+						<?php endif; ?>
+					</nav>
 				</div>
 
 				<div class="wpa-plan-calendar__legend" aria-label="<?php esc_attr_e( 'Legende', 'wp-automation-editor' ); ?>">
@@ -73,21 +131,30 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 					<div class="wpa-plan-calendar__grid">
 						<?php
-						$start_weekday_number = (int) $start_datetime->format( 'N' );
+						$leading_empty_cell_count = (int) $start_datetime->format( 'N' ) - 1;
 
-						for ( $empty_cell_index = 1; $empty_cell_index < $start_weekday_number; $empty_cell_index++ ) :
+						for ( $empty_cell_index = 0; $empty_cell_index < $leading_empty_cell_count; $empty_cell_index++ ) :
 							?>
 							<div class="wpa-plan-calendar-day wpa-plan-calendar-day--empty" aria-hidden="true"></div>
 							<?php
 						endfor;
 
-						for ( $day_index = 0; $day_index < self::DAYS_TO_SHOW; $day_index++ ) :
+						for ( $day_index = 0; $day_index < $days_in_month; $day_index++ ) :
 							$current_datetime = $start_datetime->modify( '+' . $day_index . ' days' );
 							$date_key = $current_datetime->format( 'Y-m-d' );
 							$day_posts = isset( $posts_by_date[ $date_key ] ) ? $posts_by_date[ $date_key ] : array();
 							$newsletter_id = isset( $newsletter_ids_by_date[ $date_key ] ) ? $newsletter_ids_by_date[ $date_key ] : '';
 
 							echo $this->render_day( $current_datetime, $day_posts, $newsletter_id );
+						endfor;
+
+						$used_cell_count = $leading_empty_cell_count + $days_in_month;
+						$trailing_empty_cell_count = ( 7 - ( $used_cell_count % 7 ) ) % 7;
+
+						for ( $empty_cell_index = 0; $empty_cell_index < $trailing_empty_cell_count; $empty_cell_index++ ) :
+							?>
+							<div class="wpa-plan-calendar-day wpa-plan-calendar-day--empty" aria-hidden="true"></div>
+							<?php
 						endfor;
 						?>
 					</div>
@@ -96,6 +163,64 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 			<?php
 
 			return ob_get_clean();
+		}
+
+		private function get_selected_month_datetime( $current_month_datetime, $minimum_month_datetime, $maximum_month_datetime, $timezone ) {
+			$requested_month = isset( $_GET[ self::MONTH_QUERY_ARGUMENT ] )
+				? sanitize_text_field( wp_unslash( $_GET[ self::MONTH_QUERY_ARGUMENT ] ) )
+				: '';
+
+			if ( ! preg_match( '/^\d{4}-\d{2}$/', $requested_month ) ) {
+				return $current_month_datetime;
+			}
+
+			$selected_month_datetime = DateTimeImmutable::createFromFormat( '!Y-m', $requested_month, $timezone );
+			$date_errors = DateTimeImmutable::getLastErrors();
+
+			if (
+				false === $selected_month_datetime
+				|| ( is_array( $date_errors ) && ( $date_errors['warning_count'] > 0 || $date_errors['error_count'] > 0 ) )
+				|| $selected_month_datetime->format( 'Y-m' ) !== $requested_month
+			) {
+				return $current_month_datetime;
+			}
+
+			if ( $selected_month_datetime < $minimum_month_datetime || $selected_month_datetime > $maximum_month_datetime ) {
+				return $current_month_datetime;
+			}
+
+			return $selected_month_datetime;
+		}
+
+		private function get_month_url( $month_datetime ) {
+			$page_url = get_permalink();
+
+			if ( ! $page_url ) {
+				return '';
+			}
+
+			return add_query_arg(
+				self::MONTH_QUERY_ARGUMENT,
+				$month_datetime->format( 'Y-m' ),
+				$page_url
+			);
+		}
+
+		private function get_month_label( $month_datetime, $timezone ) {
+			return wp_date( 'F Y', $month_datetime->getTimestamp(), $timezone );
+		}
+
+		private function get_date_keys( $start_datetime, $end_datetime ) {
+			$date_keys = array();
+			$current_datetime = $start_datetime->setTime( 0, 0, 0 );
+			$last_datetime = $end_datetime->setTime( 0, 0, 0 );
+
+			while ( $current_datetime <= $last_datetime ) {
+				$date_keys[] = $current_datetime->format( 'Y-m-d' );
+				$current_datetime = $current_datetime->modify( '+1 day' );
+			}
+
+			return $date_keys;
 		}
 
 		private function should_enqueue_assets() {
@@ -115,8 +240,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 		private function get_posts_by_date( $start_datetime, $end_datetime, $newsletter_ids_by_date = array() ) {
 			$posts_by_date = array();
 
-			for ( $day_index = 0; $day_index < self::DAYS_TO_SHOW; $day_index++ ) {
-				$date_key = $start_datetime->modify( '+' . $day_index . ' days' )->format( 'Y-m-d' );
+			foreach ( $this->get_date_keys( $start_datetime, $end_datetime ) as $date_key ) {
 				$posts_by_date[ $date_key ] = array();
 			}
 
@@ -281,9 +405,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 			$newsletter_schedule = $this->get_newsletter_schedule();
 			$newsletter_ids_by_date = array();
 
-			for ( $day_index = 0; $day_index < self::DAYS_TO_SHOW; $day_index++ ) {
-				$date_key = $start_datetime->modify( '+' . $day_index . ' days' )->format( 'Y-m-d' );
-
+			foreach ( $this->get_date_keys( $start_datetime, $end_datetime ) as $date_key ) {
 				if ( isset( $newsletter_schedule[ $date_key ] ) ) {
 					$newsletter_ids_by_date[ $date_key ] = $newsletter_schedule[ $date_key ];
 				}
@@ -472,7 +594,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 		private function render_day( $current_datetime, $posts, $newsletter_id = '' ) {
 			$post_count = count( $posts );
 
-			$is_today = $current_datetime->format( 'Y-m-d' ) === wp_date( 'Y-m-d' );
+			$today_datetime = new DateTimeImmutable( 'today', wp_timezone() );
+
+			$is_today = $current_datetime->format( 'Y-m-d' ) === $today_datetime->format( 'Y-m-d' );
+			$is_past = $current_datetime < $today_datetime;
 			$is_tuesday = 2 === (int) $current_datetime->format( 'N' );
 
 			$newsletter_id = absint( $newsletter_id );
@@ -484,6 +609,10 @@ if ( ! class_exists( 'WPA_Automation_Editor_Planning_Calendar_Shortcode' ) ) {
 
 			if ( $is_today ) {
 				$classes[] = 'wpa-plan-calendar-day--today';
+			}
+
+			if ( $is_past ) {
+				$classes[] = 'wpa-plan-calendar-day--past';
 			}
 
 			if ( $is_tuesday ) {

@@ -9,7 +9,7 @@
 	display: flex;
 	justify-content: space-between;
 	gap: 16px;
-	align-items: flex-start;
+	align-items: center;
 	margin-bottom: 14px;
 }
 
@@ -23,6 +23,53 @@
 	margin-top: 4px;
 	font-size: 13px;
 	color: #666666;
+}
+
+.wpa-plan-calendar__navigation {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.wpa-plan-calendar__navigation-button,
+.wpa-plan-calendar__navigation-current {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 36px;
+	box-sizing: border-box;
+	padding: 7px 10px;
+	border: 1px solid #cfcfcf;
+	background: #ffffff;
+	color: #1f1f1f;
+	font-size: 12px;
+	font-weight: 700;
+	line-height: 1.2;
+	text-align: center;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.wpa-plan-calendar__navigation-button:hover,
+.wpa-plan-calendar__navigation-current:hover {
+	border-color: #111111;
+	background: #f3f3f3;
+	color: #111111;
+	text-decoration: none;
+}
+
+.wpa-plan-calendar__navigation-button--disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.wpa-plan-calendar__navigation-current--active {
+	border-color: #00939e;
+	background: #00939e;
+	color: #ffffff;
 }
 
 .wpa-plan-calendar__legend {
@@ -74,7 +121,11 @@
 
 .wpa-plan-calendar-day {
 	position: relative;
-	min-height: 128px;
+	height: 250px;
+	min-height: 250px;
+	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
 	background: var(--wpa-plan-day-color);
 	border: 2px solid rgba(0, 0, 0, 0.1);
 	padding: 10px;
@@ -97,6 +148,9 @@
 }
 
 .wpa-plan-calendar-day--empty {
+	height: 250px;
+	min-height: 250px;
+	display: block;
 	background: transparent;
 	border: 0;
 	box-shadow: none;
@@ -105,7 +159,11 @@
 
 .wpa-plan-calendar-day--tuesday {
 	background: #e6e6e6;
-	border-color: var(--wpa-plan-day-color);
+	border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.wpa-plan-calendar-day--tuesday::before {
+	display: none;
 }
 
 .wpa-plan-calendar-day--today {
@@ -149,6 +207,10 @@
 	font-size: 13px;
 }
 
+.wpa-plan-calendar-day--tuesday .wpa-plan-calendar-day__count {
+	background: #e6e6e6;
+}
+
 .wpa-plan-calendar-day__newsletter {
 	display: inline-flex;
 	margin-top: 9px;
@@ -161,13 +223,40 @@
 
 .wpa-plan-calendar-day__posts {
 	display: flex;
+	flex: 1 1 auto;
 	flex-direction: column;
 	gap: 5px;
+	min-height: 0;
 	margin-top: 9px;
+	padding-right: 4px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
+}
+
+.wpa-plan-calendar-day__posts::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+}
+
+.wpa-plan-calendar-day__posts::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.wpa-plan-calendar-day__posts::-webkit-scrollbar-thumb {
+	background-color: rgba(0, 0, 0, 0.28);
+	border-radius: 999px;
+}
+
+.wpa-plan-calendar-day__posts::-webkit-scrollbar-thumb:hover {
+	background-color: rgba(0, 0, 0, 0.45);
 }
 
 .wpa-plan-calendar-day__post {
+	position: relative;
 	display: block;
+	flex: 0 0 auto;
 	padding: 5px 7px;
 	background: rgba(255, 255, 255, 0.72);
 	color: #1f1f1f;
@@ -182,9 +271,36 @@
 	text-decoration: underline;
 }
 
+.wpa-plan-calendar-day__post--remote-overlay {
+	padding-top: 22px;
+}
+
+.wpa-plan-calendar-day__post-overlay {
+	position: absolute;
+	top: 4px;
+	right: 5px;
+	left: 5px;
+	display: block;
+	padding: 2px 5px;
+	background: rgba(0, 0, 0, 0.72);
+	color: #ffffff;
+	font-size: 10px;
+	font-weight: 800;
+	line-height: 1.1;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
+}
+
 .wpa-plan-calendar-day__post-time {
 	font-weight: 800;
 	margin-right: 4px;
+}
+
+.wpa-plan-calendar-day__post-newsletter-id {
+	font-weight: 900;
 }
 
 .wpa-plan-calendar-day__post-title {
@@ -217,88 +333,31 @@
 		padding: 14px;
 	}
 
+	.wpa-plan-calendar__header {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
 	.wpa-plan-calendar__title {
 		font-size: 18px;
+	}
+
+	.wpa-plan-calendar__navigation {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		justify-content: stretch;
+	}
+
+	.wpa-plan-calendar__navigation-button,
+	.wpa-plan-calendar__navigation-current {
+		white-space: normal;
 	}
 
 	.wpa-plan-calendar__weekdays,
 	.wpa-plan-calendar__grid {
 		grid-template-columns: repeat(7, 105px);
 	}
-}
 
-.wpa-plan-calendar-day--tuesday .wpa-plan-calendar-day__count {
-	background: #e6e6e6;
-}
-
-.wpa-plan-calendar-day--tuesday {
-    background: #e6e6e6;
-    border: 2px solid rgba(0, 0, 0, 0.1);
-}
-
-.wpa-plan-calendar-day--tuesday::before {
-    display: none;
-}
-
-.wpa-plan-calendar-day__post {
-	position: relative;
-}
-
-.wpa-plan-calendar-day__post--remote-overlay {
-	padding-top: 22px;
-}
-
-.wpa-plan-calendar-day__post-overlay {
-	position: absolute;
-	top: 4px;
-	right: 5px;
-	left: 5px;
-	display: block;
-	padding: 2px 5px;
-	background: rgba(0, 0, 0, 0.72);
-	color: #ffffff;
-	font-size: 10px;
-	font-weight: 800;
-	line-height: 1.1;
-	text-align: center;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	pointer-events: none;
-}
-
-.wpa-plan-calendar-day__post-newsletter-id {
-	font-weight: 900;
-}
-
-.wpa-plan-calendar-day {
-	height: 250px;
-	min-height: 250px;
-	box-sizing: border-box;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-}
-
-.wpa-plan-calendar-day__posts {
-	flex: 1 1 auto;
-	min-height: 0;
-	overflow-y: auto;
-	overflow-x: hidden;
-	padding-right: 4px;
-}
-
-.wpa-plan-calendar-day__post {
-	flex: 0 0 auto;
-}
-
-.wpa-plan-calendar-day--empty {
-	height: 250px;
-	min-height: 250px;
-	display: block;
-}
-
-@media (max-width: 782px) {
 	.wpa-plan-calendar-day,
 	.wpa-plan-calendar-day--empty {
 		height: 180px;
@@ -306,27 +365,17 @@
 	}
 }
 
-/* Scrollbar innerhalb der Tagesbox */
+.wpa-plan-calendar-day--past:not(.wpa-plan-calendar-day--today) {
+	background-color: #f7f7f7;
+	border-color: #dcdcde;
+}
+
+.wpa-plan-calendar-day--past:not(.wpa-plan-calendar-day--today)
+.wpa-plan-calendar-day__top {
+	opacity: 0.62;
+}
+
+.wpa-plan-calendar-day--past:not(.wpa-plan-calendar-day--today)
 .wpa-plan-calendar-day__posts {
-	scrollbar-width: thin;
-	scrollbar-color: rgba(0, 0, 0, 0.28) transparent;
-}
-
-/* Chrome, Edge, Safari */
-.wpa-plan-calendar-day__posts::-webkit-scrollbar {
-	width: 4px;
-	height: 4px;
-}
-
-.wpa-plan-calendar-day__posts::-webkit-scrollbar-track {
-	background: transparent;
-}
-
-.wpa-plan-calendar-day__posts::-webkit-scrollbar-thumb {
-	background-color: rgba(0, 0, 0, 0.28);
-	border-radius: 999px;
-}
-
-.wpa-plan-calendar-day__posts::-webkit-scrollbar-thumb:hover {
-	background-color: rgba(0, 0, 0, 0.45);
+	opacity: 0.78;
 }
