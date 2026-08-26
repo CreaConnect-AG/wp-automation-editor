@@ -178,14 +178,27 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 exit;
             }
 
-            $category_ids = array();
+			$category_ids = array();
 
-            if ( isset( $_POST['post_categories'] ) && is_array( $_POST['post_categories'] ) ) {
-                $category_ids = array_map( 'absint', wp_unslash( $_POST['post_categories'] ) );
-                $category_ids = array_filter( $category_ids );
-            }
+			if ( isset( $_POST['post_categories'] ) && is_array( $_POST['post_categories'] ) ) {
+				$category_ids = array_map( 'absint', wp_unslash( $_POST['post_categories'] ) );
+				$category_ids = array_filter( $category_ids );
+			}
 
-            wp_set_post_categories( $post_id, $category_ids, false );
+			// immo!nvest+ wird separat über die Checkbox gesteuert.
+			$immo_invest_plus_category_id = 8;
+
+			if (
+				isset( $_POST['immo_invest_plus'] )
+				&& '1' === sanitize_text_field( wp_unslash( $_POST['immo_invest_plus'] ) )
+			) {
+				$category_ids[] = $immo_invest_plus_category_id;
+			}
+
+			// Doppelte IDs vermeiden.
+			$category_ids = array_values( array_unique( $category_ids ) );
+
+			wp_set_post_categories( $post_id, $category_ids, false );
 
             $tag_names = array();
 

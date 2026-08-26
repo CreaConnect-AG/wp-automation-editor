@@ -269,15 +269,22 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
 
             $status_options = WPA_Automation_Editor_Helpers::get_workflow_status_options();
             $current_status = WPA_Automation_Editor_Helpers::get_post_workflow_status( $post_id );
-            $selected_category_ids = wp_get_post_categories( $post_id );
+			$selected_category_ids = wp_get_post_categories( $post_id );
 
-            $all_categories = get_categories(
-                array(
-                    'hide_empty' => false,
-                    'orderby'    => 'name',
-                    'order'      => 'ASC',
-                )
-            );
+			$immo_invest_plus_category_id = 8;
+			$immo_invest_plus_active = in_array(
+				$immo_invest_plus_category_id,
+				$selected_category_ids,
+				true
+			);
+
+			$all_categories = get_categories(
+				array(
+					'hide_empty' => false,
+					'orderby'    => 'name',
+					'order'      => 'ASC',
+				)
+			);
 
             $selected_tags = wp_get_post_tags( $post_id, array( 'fields' => 'names' ) );
             $all_tags = get_tags(
@@ -396,7 +403,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                     <?php checked( $remote_publish_type, 'immonews' ); ?>
                                 >
                                 <span>
-                                    <strong><?php esc_html_e( 'immoNews (nur als immo-invest.ch Beitrag veröffentlichen)', 'wp-automation-editor' ); ?></strong>
+                                    <strong><?php esc_html_e( 'immoNews', 'wp-automation-editor' ); ?></strong>
                                     <small><?php esc_html_e( 'Der Beitrag wird mit Veröffentlichungsdatum und Uhrzeit geplant.', 'wp-automation-editor' ); ?></small>
                                 </span>
                             </label>
@@ -593,22 +600,39 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                             <div class="wpa-form-row">
 
                                 <label for="wpa_post_categories"><?php esc_html_e( 'Kategorien', 'wp-automation-editor' ); ?></label>
-                                <select id="wpa_post_categories" name="post_categories[]" multiple class="wpa-categories-select">
+								<select id="wpa_post_categories" name="post_categories[]" multiple class="wpa-categories-select">
+									<?php foreach ( $all_categories as $category ) : ?>
 
-                                    <?php foreach ( $all_categories as $category ) : ?>
+									<?php
+									// immo!nvest+ wird separat als Checkbox dargestellt.
+									if ( $immo_invest_plus_category_id === (int) $category->term_id ) {
+										continue;
+									}
+									?>
 
-                                        <option value="<?php echo esc_attr( $category->term_id ); ?>" <?php selected( in_array( (int) $category->term_id, $selected_category_ids, true ) ); ?>>
+									<option
+											value="<?php echo esc_attr( $category->term_id ); ?>"
+											<?php selected( in_array( (int) $category->term_id, $selected_category_ids, true ) ); ?>
+											>
+										<?php echo esc_html( $category->name ); ?>
+									</option>
 
-                                            <?php echo esc_html( $category->name ); ?>
+									<?php endforeach; ?>
+								</select>
+								<p class="wpa-help-text">
+									<?php esc_html_e( 'Mehrere Kategorien können ausgewählt werden.', 'wp-automation-editor' ); ?>
+								</p>
 
-                                        </option>
-
-                                    <?php endforeach; ?>
-
-                                </select>
-                                <p class="wpa-help-text">
-                                    <?php esc_html_e( 'Mehrere Kategorien können ausgewählt werden. immo!nvest+ auswählen, falls der Beitrag auf immo-invest.ch gesperrt sein soll.', 'wp-automation-editor' ); ?>
-                                </p>
+								<label class="wpa-checkbox-label" for="wpa_immo_invest_plus">
+									<input
+										   type="checkbox"
+										   id="wpa_immo_invest_plus"
+										   name="immo_invest_plus"
+										   value="1"
+										   <?php checked( $immo_invest_plus_active ); ?>
+										   >
+									<?php esc_html_e( 'immo!nvest+ – Beitrag auf immo-invest.ch sperren', 'wp-automation-editor' ); ?>
+								</label>
 
                             </div>
 

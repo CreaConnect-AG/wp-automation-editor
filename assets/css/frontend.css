@@ -450,3 +450,15 @@ input#wpa_remote_publish_date {
 	color: #b32d2e;
 	font-weight: 700;
 }
+
+.wpa-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.wpa-checkbox-label input[type="checkbox"] {
+    margin: 0;
+}
