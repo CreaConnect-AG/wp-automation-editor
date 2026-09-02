@@ -289,7 +289,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             wp_set_post_lock( $post_id );
 
             $status_options = WPA_Automation_Editor_Helpers::get_workflow_status_options();
-            $current_status = WPA_Automation_Editor_Helpers::get_post_workflow_status( $post_id );
+            $current_status = 'fertig';
 			$selected_category_ids = wp_get_post_categories( $post_id );
 
 			$immo_invest_plus_category_id = 8;
