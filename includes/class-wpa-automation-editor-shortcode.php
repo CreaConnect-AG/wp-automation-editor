@@ -46,6 +46,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                 echo $this->render_dashboard( $author_id );
             }
 
+            echo $this->render_email_dialog();
             echo '</div>';
 
             return ob_get_clean();
@@ -223,16 +224,6 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                         </table>
                     </div>
 
-                    <dialog class="wpa-email-dialog" data-wpa-email-dialog aria-labelledby="wpa-email-dialog-title">
-                        <div class="wpa-email-dialog-header">
-                            <h2 id="wpa-email-dialog-title"><?php esc_html_e( 'Ursprüngliche E-Mail', 'wp-automation-editor' ); ?></h2>
-                            <button type="button" class="wpa-email-dialog-close" data-wpa-email-close title="<?php esc_attr_e( 'Schließen', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'Schließen', 'wp-automation-editor' ); ?>">
-                                <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
-                            </button>
-                        </div>
-                        <div class="wpa-email-dialog-content" data-wpa-email-dialog-content></div>
-                    </dialog>
-
                     <?php echo WPA_Automation_Editor_Helpers::render_pagination( $posts_query, $current_page, $current_status_filter, $current_date_filter ); ?>
                 <?php else : ?>
                     <div class="wpa-empty-state">
@@ -342,12 +333,21 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             if ( function_exists( 'get_field' ) ) {
                 $newsletter_id = get_field( 'newsletter_id', $post_id );
                 $midjourney_prompt = get_field( 'midjourney_prompt_en', $post_id );
+                $email_text = get_field( 'email_text', $post_id );
+                $source_references = get_field( 'quellen_automate', $post_id );
+                $location = get_field( 'ort', $post_id );
             } else {
                 $newsletter_id = get_post_meta( $post_id, 'newsletter_id', true );
                 $midjourney_prompt = get_post_meta( $post_id, 'midjourney_prompt_en', true );
+                $email_text = get_post_meta( $post_id, 'email_text', true );
+                $source_references = get_post_meta( $post_id, 'quellen_automate', true );
+                $location = get_post_meta( $post_id, 'ort', true );
             }
 
             $newsletter_id = '' !== (string) $newsletter_id ? absint( $newsletter_id ) : '';
+            $email_text = is_string( $email_text ) ? trim( $email_text ) : '';
+            $source_references = is_string( $source_references ) ? trim( $source_references ) : '';
+            $location = is_scalar( $location ) ? (string) $location : '';
             $remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
             $remote_publish_date = $remote_publish_schedule['date'];
             $remote_publish_time = $remote_publish_schedule['time'];
@@ -595,6 +595,17 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                     </div>
 
                     <div class="wpa-form-section">
+                        <button type="button" class="wpa-email-text-link" data-wpa-email-open="wpa-edit-email-content">
+                            <?php esc_html_e( 'Ursprüngliche E-Mail anzeigen', 'wp-automation-editor' ); ?>
+                        </button>
+                        <div id="wpa-edit-email-content" class="wpa-email-content-source" hidden>
+                            <?php if ( '' !== $email_text ) : ?>
+                                <?php echo wp_kses_post( $email_text ); ?>
+                            <?php else : ?>
+                                <p><?php esc_html_e( 'Für diesen Beitrag ist kein E-Mail-Text vorhanden.', 'wp-automation-editor' ); ?></p>
+                            <?php endif; ?>
+                        </div>
+
                         <h3><?php esc_html_e( 'Beitragsinhalt', 'wp-automation-editor' ); ?></h3>
 
                         <div class="wpa-form-row">
@@ -625,6 +636,15 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                 ?>
                             </div>
                         </div>
+
+                        <?php if ( '' !== $source_references ) : ?>
+                            <div class="wpa-form-row wpa-readonly-field">
+                                <span class="wpa-readonly-field-label"><?php esc_html_e( 'Quellen', 'wp-automation-editor' ); ?></span>
+                                <div class="wpa-readonly-field-content">
+                                    <?php echo wp_kses_post( $source_references ); ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
 
                         <div class="wpa-form-grid">
                             <div class="wpa-form-row">
@@ -679,6 +699,11 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
 
                                 <p class="wpa-help-text"><?php esc_html_e( 'Vorhandene Schlagwörter auswählen oder neue eintippen und mit Enter bestätigen.', 'wp-automation-editor' ); ?></p>
                             </div>
+                        </div>
+
+                        <div class="wpa-form-row">
+                            <label for="wpa_location"><?php esc_html_e( 'Ort', 'wp-automation-editor' ); ?></label>
+                            <input type="text" id="wpa_location" name="location" value="<?php echo esc_attr( $location ); ?>">
                         </div>
                     </div>
 
@@ -769,6 +794,22 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
             </div>
             <?php
 
+            return ob_get_clean();
+        }
+
+        private function render_email_dialog() {
+            ob_start();
+            ?>
+            <dialog class="wpa-email-dialog" data-wpa-email-dialog aria-labelledby="wpa-email-dialog-title">
+                <div class="wpa-email-dialog-header">
+                    <h2 id="wpa-email-dialog-title"><?php esc_html_e( 'Ursprüngliche E-Mail', 'wp-automation-editor' ); ?></h2>
+                    <button type="button" class="wpa-email-dialog-close" data-wpa-email-close title="<?php esc_attr_e( 'Schließen', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'Schließen', 'wp-automation-editor' ); ?>">
+                        <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="wpa-email-dialog-content" data-wpa-email-dialog-content></div>
+            </dialog>
+            <?php
             return ob_get_clean();
         }
     }

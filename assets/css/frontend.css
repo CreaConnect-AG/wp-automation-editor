@@ -112,6 +112,25 @@ p.wpa-help-text {
     border-color: #00545a;
 }
 
+button.wpa-email-text-link {
+    margin-bottom: 30px;
+    background: transparent;
+    color: #00939e;
+    padding: 0;
+    text-decoration: underline;
+    font-size: small;
+}
+
+button.wpa-email-text-link:hover {
+    color: #00545a;
+    background: transparent;
+}
+
+button.wpa-email-text-link:focus {
+    color: #00545a;
+    background: transparent;
+}
+
 .wpa-table-wrap {
     overflow-x: auto;
 }
@@ -525,5 +544,43 @@ input#wpa_remote_publish_date {
 }
 
 .wpa-email-dialog-content > :last-child {
+    margin-bottom: 0;
+}
+
+.wpa-email-text-link {
+    display: inline-block;
+    margin: 0 0 14px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #00939e;
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.wpa-email-text-link:hover,
+.wpa-email-text-link:focus {
+    color: #00545a;
+}
+
+.wpa-readonly-field {
+    padding: 16px;
+    border: 1px solid #dcdcde;
+    background: #f6f7f7;
+}
+
+.wpa-readonly-field-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.wpa-readonly-field-content > :first-child {
+    margin-top: 0;
+}
+
+.wpa-readonly-field-content > :last-child {
     margin-bottom: 0;
 }
