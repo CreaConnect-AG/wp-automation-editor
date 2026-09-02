@@ -418,10 +418,18 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
             exit;
         }
 
-        private function send_teams_status_change_notification( $post_id, $old_workflow_status, $new_workflow_status ) {
-            $webhook_url = 'https://YOUR-WEBHOOK-URL-HERE';
+        private static function get_status_teams_webhook_url() {
+            $webhook_url = defined( 'WPA_EDITOR_STATUS_TEAMS_WEBHOOK_URL' )
+                ? WPA_EDITOR_STATUS_TEAMS_WEBHOOK_URL
+                : '';
 
-            if ( empty( $webhook_url ) || 'https://YOUR-WEBHOOK-URL-HERE' === $webhook_url ) {
+            return (string) apply_filters( 'wpa_automation_editor_status_teams_webhook_url', $webhook_url );
+        }
+
+        private function send_teams_status_change_notification( $post_id, $old_workflow_status, $new_workflow_status ) {
+            $webhook_url = self::get_status_teams_webhook_url();
+
+            if ( empty( $webhook_url ) ) {
                 return;
             }
 
