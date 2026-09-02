@@ -174,6 +174,14 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                     $status_label = isset( $status_options[ $status_key ] ) ? $status_options[ $status_key ] : $status_options['unbearbeitet'];
                                     $categories = get_the_category( $post_id );
                                     $category_names = ! empty( $categories ) ? wp_list_pluck( $categories, 'name' ) : array();
+
+                                    if ( function_exists( 'get_field' ) ) {
+                                        $email_text = get_field( 'email_text', $post_id );
+                                    } else {
+                                        $email_text = get_post_meta( $post_id, 'email_text', true );
+                                    }
+
+                                    $email_text = is_string( $email_text ) ? trim( $email_text ) : '';
                                     ?>
                                     <tr>
                                         <td>
@@ -190,6 +198,18 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                         </td>
                                         <td><?php echo esc_html( ! empty( $category_names ) ? implode( ', ', $category_names ) : '—' ); ?></td>
                                         <td class="actions">
+                                            <button type="button" class="wpa-button wpa-icon-button wpa-email-button" data-wpa-email-open="wpa-email-content-<?php echo esc_attr( $post_id ); ?>" title="<?php esc_attr_e( 'E-Mail anzeigen', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'E-Mail anzeigen', 'wp-automation-editor' ); ?>">
+                                                <span class="dashicons dashicons-email-alt" aria-hidden="true"></span>
+                                                <span class="wpa-screen-reader-text"><?php esc_html_e( 'E-Mail anzeigen', 'wp-automation-editor' ); ?></span>
+                                            </button>
+                                            <div id="wpa-email-content-<?php echo esc_attr( $post_id ); ?>" class="wpa-email-content-source" hidden>
+                                                <?php if ( '' !== $email_text ) : ?>
+                                                    <?php echo wp_kses_post( $email_text ); ?>
+                                                <?php else : ?>
+                                                    <p><?php esc_html_e( 'Für diesen Beitrag ist kein E-Mail-Text vorhanden.', 'wp-automation-editor' ); ?></p>
+                                                <?php endif; ?>
+                                            </div>
+
                                             <a class="wpa-button wpa-button-primary wpa-icon-button" href="<?php echo esc_url( WPA_Automation_Editor_Helpers::get_edit_url( $post_id ) ); ?>" title="<?php esc_attr_e( 'Bearbeiten', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'Bearbeiten', 'wp-automation-editor' ); ?>">
                                                 <span class="dashicons dashicons-edit" aria-hidden="true"></span>
                                                 <span class="wpa-screen-reader-text"><?php esc_html_e( 'bearbeiten', 'wp-automation-editor' ); ?></span>
@@ -202,6 +222,16 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                             </tbody>
                         </table>
                     </div>
+
+                    <dialog class="wpa-email-dialog" data-wpa-email-dialog aria-labelledby="wpa-email-dialog-title">
+                        <div class="wpa-email-dialog-header">
+                            <h2 id="wpa-email-dialog-title"><?php esc_html_e( 'Ursprüngliche E-Mail', 'wp-automation-editor' ); ?></h2>
+                            <button type="button" class="wpa-email-dialog-close" data-wpa-email-close title="<?php esc_attr_e( 'Schließen', 'wp-automation-editor' ); ?>" aria-label="<?php esc_attr_e( 'Schließen', 'wp-automation-editor' ); ?>">
+                                <span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="wpa-email-dialog-content" data-wpa-email-dialog-content></div>
+                    </dialog>
 
                     <?php echo WPA_Automation_Editor_Helpers::render_pagination( $posts_query, $current_page, $current_status_filter, $current_date_filter ); ?>
                 <?php else : ?>

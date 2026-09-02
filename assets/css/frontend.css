@@ -292,6 +292,10 @@ p.wpa-help-text {
 	margin-left: 6px;
 }
 
+.wpa-editor-wrap a.wpa-button.wpa-button-primary.wpa-icon-button {
+	margin-left: 6px;
+}
+
 .wpa-button-danger {
 	background: #b32d2e;
 	border-color: #b32d2e;
@@ -461,4 +465,65 @@ input#wpa_remote_publish_date {
 
 .wpa-checkbox-label input[type="checkbox"] {
     margin: 0;
+}
+
+.wpa-email-dialog {
+    width: min(760px, calc(100% - 32px));
+    max-height: min(80vh, 800px);
+    padding: 0;
+    border: 0;
+    background: #fff;
+    color: #1d2327;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.28);
+}
+
+.wpa-email-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.58);
+}
+
+.wpa-email-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.wpa-email-dialog-header h2 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.wpa-email-dialog-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #1d2327;
+    cursor: pointer;
+}
+
+.wpa-email-dialog-close:hover,
+.wpa-email-dialog-close:focus {
+    background: #f0f0f1;
+}
+
+.wpa-email-dialog-content {
+    max-height: calc(80vh - 77px);
+    padding: 22px;
+    overflow-y: auto;
+    line-height: 1.6;
+}
+
+.wpa-email-dialog-content > :first-child {
+    margin-top: 0;
+}
+
+.wpa-email-dialog-content > :last-child {
+    margin-bottom: 0;
 }

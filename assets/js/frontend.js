@@ -3,6 +3,53 @@ document.addEventListener('DOMContentLoaded', function () {
     const tagSelectField = document.querySelector('.wpa-tags-select');
     const editForm = document.querySelector('.wpa-edit-form');
 
+    function initEmailDialog() {
+        const emailDialog = document.querySelector('[data-wpa-email-dialog]');
+
+        if (!emailDialog || typeof emailDialog.showModal !== 'function') {
+            return;
+        }
+
+        const dialogContent = emailDialog.querySelector('[data-wpa-email-dialog-content]');
+        const closeButton = emailDialog.querySelector('[data-wpa-email-close]');
+        const openButtons = document.querySelectorAll('[data-wpa-email-open]');
+
+        if (!dialogContent || !closeButton || !openButtons.length) {
+            return;
+        }
+
+        openButtons.forEach(function (openButton) {
+            openButton.addEventListener('click', function () {
+                const contentSourceId = openButton.getAttribute('data-wpa-email-open');
+                const contentSource = document.getElementById(contentSourceId);
+
+                if (!contentSource) {
+                    return;
+                }
+
+                dialogContent.innerHTML = contentSource.innerHTML;
+                emailDialog.showModal();
+                closeButton.focus();
+            });
+        });
+
+        closeButton.addEventListener('click', function () {
+            emailDialog.close();
+        });
+
+        emailDialog.addEventListener('click', function (event) {
+            if (event.target === emailDialog) {
+                emailDialog.close();
+            }
+        });
+
+        emailDialog.addEventListener('close', function () {
+            dialogContent.innerHTML = '';
+        });
+    }
+
+    initEmailDialog();
+
     function initRemotePublishTypeFields() {
         if (!editForm) {
             return;
