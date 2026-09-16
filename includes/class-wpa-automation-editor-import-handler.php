@@ -440,6 +440,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 			$quelle = $this->get_field_value( 'quelle', $post_id );
 			$newsletter_id = $this->get_field_value( 'newsletter_id', $post_id );
 			$location = $this->get_field_value( 'ort', $post_id );
+			$summary = $this->get_field_value( 'zusammenfassung', $post_id );
 
 			if ( '' === $lead ) {
 				$lead = $post->post_excerpt;
@@ -468,6 +469,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Import_Handler' ) ) {
 					'field_5e4ce60cd16db' => $quelle,
 					'field_67bc48a5835d3' => $post_id,
 					'ort' => $location,
+					'zusammenfassung' => $summary,
 				),
 			);
 

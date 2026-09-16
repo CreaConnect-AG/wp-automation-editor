@@ -336,18 +336,21 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                 $email_text = get_field( 'email_text', $post_id );
                 $source_references = get_field( 'quellen_automate', $post_id );
                 $location = get_field( 'ort', $post_id );
+                $summary = get_field( 'zusammenfassung', $post_id );
             } else {
                 $newsletter_id = get_post_meta( $post_id, 'newsletter_id', true );
                 $midjourney_prompt = get_post_meta( $post_id, 'midjourney_prompt_en', true );
                 $email_text = get_post_meta( $post_id, 'email_text', true );
                 $source_references = get_post_meta( $post_id, 'quellen_automate', true );
                 $location = get_post_meta( $post_id, 'ort', true );
+                $summary = get_post_meta( $post_id, 'zusammenfassung', true );
             }
 
             $newsletter_id = '' !== (string) $newsletter_id ? absint( $newsletter_id ) : '';
             $email_text = is_string( $email_text ) ? trim( $email_text ) : '';
             $source_references = is_string( $source_references ) ? trim( $source_references ) : '';
             $location = is_scalar( $location ) ? (string) $location : '';
+            $summary = is_scalar( $summary ) ? (string) $summary : '';
             $remote_publish_schedule = WPA_Automation_Editor_Helpers::get_post_remote_publish_schedule( $post_id );
             $remote_publish_date = $remote_publish_schedule['date'];
             $remote_publish_time = $remote_publish_schedule['time'];
@@ -629,6 +632,25 @@ if ( ! class_exists( 'WPA_Automation_Editor_Shortcode' ) ) {
                                     array(
                                         'textarea_name' => 'post_content',
                                         'textarea_rows' => 18,
+                                        'media_buttons' => false,
+                                        'teeny'         => false,
+                                    )
+                                );
+                                ?>
+                            </div>
+                        </div>
+
+                        <div class="wpa-form-row">
+                            <label><?php esc_html_e( 'Zusammenfassung', 'wp-automation-editor' ); ?></label>
+
+                            <div class="wpa-editor-box">
+                                <?php
+                                wp_editor(
+                                    $summary,
+                                    'wpa_summary_editor',
+                                    array(
+                                        'textarea_name' => 'summary',
+                                        'textarea_rows' => 10,
                                         'media_buttons' => false,
                                         'teeny'         => false,
                                     )

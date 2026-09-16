@@ -50,6 +50,8 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
             $post_content = isset( $_POST['post_content'] ) ? wp_kses_post( wp_unslash( $_POST['post_content'] ) ) : '';
 
+            $summary = isset( $_POST['summary'] ) ? wp_kses_post( wp_unslash( $_POST['summary'] ) ) : '';
+
             $post_excerpt = isset( $_POST['post_excerpt'] ) ? wp_kses_post( wp_unslash( $_POST['post_excerpt'] ) ) : '';
 
             $location = isset( $_POST['location'] ) ? sanitize_text_field( wp_unslash( $_POST['location'] ) ) : '';
@@ -222,6 +224,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
                 update_field( 'newsletter_id', $newsletter_id, $post_id );
                 update_field( 'lead', $post_excerpt, $post_id );
                 update_field( 'ort', $location, $post_id );
+                update_field( 'zusammenfassung', $summary, $post_id );
 
             } else {
 
@@ -236,6 +239,7 @@ if ( ! class_exists( 'WPA_Automation_Editor_Post_Handler' ) ) {
 
                 update_post_meta( $post_id, 'lead', $post_excerpt );
                 update_post_meta( $post_id, 'ort', $location );
+                update_post_meta( $post_id, 'zusammenfassung', $summary );
 
             }
 
